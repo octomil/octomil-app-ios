@@ -1,24 +1,26 @@
 import SwiftUI
-import OctomilClient
+import Octomil
 import Network
 
 /// Shared application state managing client, models, pairing, and local server.
 @MainActor
 final class AppState: ObservableObject {
     @Published var client: OctomilClient?
-    @Published var downloadedModels: [OctomilModel] = []
+    @Published var pairedModels: [PairedModelInfo] = []
     @Published var isRegistered = false
     @Published var showPairingSheet = false
     @Published var pendingPairingCode: String?
     @Published var selectedTab: AppTab = .home
 
-    @AppStorage("octomil_api_key") var apiKey: String = ""
+    @AppStorage("octomil_device_token") var deviceToken: String = ""
     @AppStorage("octomil_org_id") var orgId: String = ""
-    @AppStorage("octomil_server_url") var serverURL: String = "https://api.octomil.com/api/v1"
+    @AppStorage("octomil_server_url") var serverURL: String = "https://api.octomil.com"
     @AppStorage("octomil_device_name") var deviceName: String = ""
 
     private var localServer: LocalPairingServer?
     private var advertiser: NWListener?
+
+    // No DeviceMetadata() — it lacks a public init. Collect device info inline.
 
     /// The mDNS-advertised port for the local pairing server.
     private(set) var localPort: UInt16 = 0
@@ -31,26 +33,26 @@ final class AppState: ObservableObject {
             deviceName = Host.current().localizedName ?? "Mac"
             #endif
         }
-        if !apiKey.isEmpty, !orgId.isEmpty {
+        if !deviceToken.isEmpty, !orgId.isEmpty {
             initializeClient()
         }
     }
 
     func initializeClient() {
-        guard !apiKey.isEmpty, !orgId.isEmpty else { return }
-        let baseURL = URL(string: serverURL) ?? URL(string: "https://api.octomil.com/api/v1")!
-        client = OctomilClient(apiKey: apiKey, orgId: orgId, baseURL: baseURL)
+        guard !deviceToken.isEmpty, !orgId.isEmpty else { return }
+        let baseURL = URL(string: serverURL) ?? OctomilClient.defaultServerURL
+        client = OctomilClient(deviceAccessToken: deviceToken, orgId: orgId, serverURL: baseURL)
     }
 
     func register() async throws {
         guard let client else { return }
-        try await client.register()
-        isRegistered = true
+        _ = try await client.register()
+        isRegistered = client.isRegistered
     }
 
-    func addModel(_ model: OctomilModel) {
-        if !downloadedModels.contains(where: { $0.modelId == model.modelId }) {
-            downloadedModels.append(model)
+    func addPairedModel(_ model: PairedModelInfo) {
+        if !pairedModels.contains(where: { $0.name == model.name }) {
+            pairedModels.append(model)
         }
     }
 
@@ -79,24 +81,28 @@ final class AppState: ObservableObject {
     func startAdvertising() {
         guard localPort > 0 else { return }
 
-        let txtRecord = NWTXTRecord()
-        txtRecord[.init("device_name")] = .string(deviceName)
-        txtRecord[.init("platform")] = .string("ios")
-        txtRecord[.init("device_id")] = .string(
-            UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
-        )
+        let name = deviceName
+        let port = localPort
+        let deviceIdString = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+
+        var txtDict: [String: String] = [:]
+        txtDict["device_name"] = name
+        txtDict["platform"] = "ios"
+        txtDict["device_id"] = deviceIdString
+        let txtData = NetService.data(fromTXTRecord: txtDict.mapValues { $0.data(using: .utf8) ?? Data() })
+        let txtRecord = NWTXTRecord(txtData)
 
         do {
-            let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: localPort)!)
+            let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: port)!)
             listener.service = NWListener.Service(
-                name: deviceName,
+                name: name,
                 type: "_octomil._tcp",
                 txtRecord: txtRecord
             )
             listener.stateUpdateHandler = { state in
                 switch state {
                 case .ready:
-                    print("[mDNS] Advertising \(self.deviceName) on port \(self.localPort)")
+                    print("[mDNS] Advertising \(name) on port \(port)")
                 case .failed(let error):
                     print("[mDNS] Failed: \(error)")
                 default:

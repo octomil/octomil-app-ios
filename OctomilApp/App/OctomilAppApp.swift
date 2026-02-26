@@ -1,6 +1,5 @@
 import SwiftUI
-import OctomilClient
-import OctomilUI
+import Octomil
 
 @main
 struct OctomilAppApp: App {

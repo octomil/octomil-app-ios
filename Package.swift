@@ -14,8 +14,7 @@ let package = Package(
         .executableTarget(
             name: "OctomilApp",
             dependencies: [
-                .product(name: "OctomilClient", package: "octomil-ios"),
-                .product(name: "OctomilUI", package: "octomil-ios"),
+                .product(name: "Octomil", package: "octomil-ios"),
             ],
             path: "OctomilApp"
         ),

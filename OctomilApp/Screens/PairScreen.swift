@@ -1,6 +1,5 @@
 import SwiftUI
-import OctomilClient
-import OctomilUI
+import Octomil
 
 struct PairScreen: View {
     @EnvironmentObject private var appState: AppState
@@ -8,28 +7,43 @@ struct PairScreen: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let client = appState.client {
-                    PairingView(client: client) { model in
-                        appState.addModel(model)
-                        appState.showPairingSheet = false
-                        appState.pendingPairingCode = nil
-                    }
-                } else {
-                    ContentUnavailableView(
-                        "Not Configured",
-                        systemImage: "gear",
-                        description: Text("Set your API key in Settings before pairing.")
+                if let code = appState.pendingPairingCode {
+                    PairingScreen(
+                        token: code,
+                        host: appState.serverURL,
+                        onTryModel: { modelInfo in
+                            appState.addPairedModel(modelInfo)
+                            appState.showPairingSheet = false
+                            appState.pendingPairingCode = nil
+                        }
                     )
+                } else if appState.client != nil {
+                    VStack(spacing: 16) {
+                        Image(systemName: "qrcode.viewfinder")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary)
+                        Text("Ready to Pair")
+                            .font(.title2.bold())
+                        Text("Scan a QR code or run\n`octomil deploy <model> --phone`\nto pair.")
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                } else {
+                    VStack(spacing: 16) {
+                        Image(systemName: "gear")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary)
+                        Text("Not Configured")
+                            .font(.title2.bold())
+                        Text("Set your device token in Settings before pairing.")
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
                 }
             }
             .navigationTitle("Pair Device")
-            .onAppear {
-                // Auto-trigger pairing if code was received (deep link or local server)
-                if let code = appState.pendingPairingCode {
-                    appState.pendingPairingCode = nil
-                    // The PairingView handles auto-connect via its initializer
-                }
-            }
         }
     }
 }

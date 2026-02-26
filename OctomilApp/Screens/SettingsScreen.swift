@@ -1,18 +1,16 @@
 import SwiftUI
-import OctomilClient
+import Octomil
 
 struct SettingsScreen: View {
     @EnvironmentObject private var appState: AppState
     @State private var showClearCacheAlert = false
-    @State private var showLogoutAlert = false
-    @State private var cacheSize: String = "..."
     @State private var statusMessage: String?
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("API Configuration") {
-                    TextField("API Key", text: $appState.apiKey)
+                    TextField("Device Token", text: $appState.deviceToken)
                         .textContentType(.none)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -32,7 +30,7 @@ struct SettingsScreen: View {
                         appState.initializeClient()
                         statusMessage = "Client reconfigured"
                     }
-                    .disabled(appState.apiKey.isEmpty || appState.orgId.isEmpty)
+                    .disabled(appState.deviceToken.isEmpty || appState.orgId.isEmpty)
                 }
 
                 Section("Device") {
@@ -41,36 +39,19 @@ struct SettingsScreen: View {
                 }
 
                 Section("Cache") {
-                    LabeledContent("Size", value: cacheSize)
                     Button("Clear Model Cache", role: .destructive) {
                         showClearCacheAlert = true
                     }
                 }
 
                 Section("Device Info") {
-                    if let client = appState.client {
-                        let caps = client.deviceCapabilities
-                        LabeledContent("Chip", value: caps.model)
-                        LabeledContent("RAM", value: "\(caps.totalMemoryMb) MB")
-                        LabeledContent("OS", value: caps.osVersion)
-                        LabeledContent("NPU", value: caps.npuAvailable ? "Available" : "Not Available")
-                    }
-                }
-
-                Section("Account") {
-                    if appState.isRegistered {
-                        Button("Logout", role: .destructive) {
-                            showLogoutAlert = true
-                        }
-                    } else {
-                        Text("Not registered")
-                            .foregroundStyle(.secondary)
-                    }
+                    LabeledContent("Chip", value: deviceModel)
+                    LabeledContent("RAM", value: "\(ProcessInfo.processInfo.physicalMemory / (1024 * 1024)) MB")
+                    LabeledContent("OS", value: UIDevice.current.systemVersion)
                 }
 
                 Section("About") {
                     LabeledContent("App Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
-                    LabeledContent("SDK Version", value: "1.0.0")
                     LabeledContent("Platform", value: "iOS")
                 }
 
@@ -88,14 +69,15 @@ struct SettingsScreen: View {
             } message: {
                 Text("This will remove all downloaded models.")
             }
-            .alert("Logout?", isPresented: $showLogoutAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Logout", role: .destructive) { logout() }
-            } message: {
-                Text("This will revoke device authentication.")
-            }
-            .task {
-                await updateCacheSize()
+        }
+    }
+
+    private var deviceModel: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        return withUnsafePointer(to: &systemInfo.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                String(validatingUTF8: $0) ?? UIDevice.current.model
             }
         }
     }
@@ -105,39 +87,11 @@ struct SettingsScreen: View {
             guard let client = appState.client else { return }
             do {
                 try await client.clearCache()
-                appState.downloadedModels.removeAll()
-                await updateCacheSize()
+                appState.pairedModels.removeAll()
                 statusMessage = "Cache cleared"
             } catch {
                 statusMessage = "Failed: \(error.localizedDescription)"
             }
-        }
-    }
-
-    private func logout() {
-        Task {
-            guard let client = appState.client else { return }
-            do {
-                try await client.logout(reason: "user_initiated")
-                appState.isRegistered = false
-                appState.downloadedModels.removeAll()
-                statusMessage = "Logged out"
-            } catch {
-                statusMessage = "Logout failed: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    private func updateCacheSize() async {
-        guard let client = appState.client else {
-            cacheSize = "N/A"
-            return
-        }
-        do {
-            let bytes = try await client.cacheSize()
-            cacheSize = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-        } catch {
-            cacheSize = "Unknown"
         }
     }
 }

@@ -11,8 +11,13 @@
     <key>compileBitcode</key>
     <false/>
     <key>destination</key>
-    <string>upload</string>
+    <string>export</string>
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>ai.octomil.app</key>
+        <string>Octomil App Store</string>
+    </dict>
 </dict>
 </plist>

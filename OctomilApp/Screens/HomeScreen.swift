@@ -1,33 +1,23 @@
 import SwiftUI
-import OctomilClient
+import Octomil
 
 struct HomeScreen: View {
     @EnvironmentObject private var appState: AppState
     @State private var isRegistering = false
     @State private var errorMessage: String?
-    @State private var cacheSize: String = "Calculating..."
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Device") {
-                    if let client = appState.client {
-                        let caps = client.deviceCapabilities
-                        LabeledContent("Model", value: caps.model)
-                        LabeledContent("CPU", value: caps.cpuArchitecture)
-                        LabeledContent("OS", value: caps.osVersion)
-                        LabeledContent("RAM", value: "\(caps.totalMemoryMb) MB")
-                        LabeledContent("Neural Engine", value: caps.npuAvailable ? "Available" : "Not Available")
-                        if let tops = caps.npuTops {
-                            LabeledContent("NPU TOPS", value: String(format: "%.1f", tops))
-                        }
-                    } else {
-                        ContentUnavailableView(
-                            "Not Configured",
-                            systemImage: "gear",
-                            description: Text("Set your API key in Settings to get started.")
-                        )
-                    }
+                    LabeledContent("Model", value: deviceModel)
+                    #if arch(arm64)
+                    LabeledContent("CPU", value: "arm64")
+                    #else
+                    LabeledContent("CPU", value: "x86_64")
+                    #endif
+                    LabeledContent("OS", value: UIDevice.current.systemVersion)
+                    LabeledContent("RAM", value: "\(ProcessInfo.processInfo.physicalMemory / (1024 * 1024)) MB")
                 }
 
                 Section("Status") {
@@ -48,6 +38,9 @@ struct HomeScreen: View {
                             }
                         }
                         .disabled(isRegistering)
+                    } else {
+                        Text("Set device token in Settings to get started.")
+                            .foregroundStyle(.secondary)
                     }
 
                     if let error = errorMessage {
@@ -57,8 +50,8 @@ struct HomeScreen: View {
                     }
                 }
 
-                Section("Downloaded Models") {
-                    if appState.downloadedModels.isEmpty {
+                Section("Paired Models") {
+                    if appState.pairedModels.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("No models deployed yet")
                                 .foregroundStyle(.secondary)
@@ -68,20 +61,16 @@ struct HomeScreen: View {
                         }
                         .padding(.vertical, 4)
                     } else {
-                        ForEach(appState.downloadedModels, id: \.modelId) { model in
+                        ForEach(appState.pairedModels, id: \.name) { model in
                             NavigationLink {
                                 ModelDetailScreen(model: model)
                             } label: {
-                                HStack {
-                                    modalityIcon(for: model)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(model.name)
+                                        .font(.headline)
+                                    Text("v\(model.version) \u{00B7} \(model.runtime)")
+                                        .font(.caption)
                                         .foregroundStyle(.secondary)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(model.modelId)
-                                            .font(.headline)
-                                        Text("v\(model.version) \u{00B7} \(model.format)")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
                                 }
                             }
                         }
@@ -94,27 +83,18 @@ struct HomeScreen: View {
                         LabeledContent("Local Server", value: "Port \(appState.localPort)")
                     }
                 }
-
-                Section("Cache") {
-                    LabeledContent("Size", value: cacheSize)
-                }
             }
             .navigationTitle("Octomil")
-            .task {
-                await updateCacheSize()
-            }
         }
     }
 
-    @ViewBuilder
-    private func modalityIcon(for model: OctomilModel) -> some View {
-        switch model.format.lowercased() {
-        case let f where f.contains("vision"):
-            Image(systemName: "eye")
-        case let f where f.contains("audio"):
-            Image(systemName: "waveform")
-        default:
-            Image(systemName: "text.bubble")
+    private var deviceModel: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        return withUnsafePointer(to: &systemInfo.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                String(validatingUTF8: $0) ?? UIDevice.current.model
+            }
         }
     }
 
@@ -128,16 +108,6 @@ struct HomeScreen: View {
                 errorMessage = error.localizedDescription
             }
             isRegistering = false
-        }
-    }
-
-    private func updateCacheSize() async {
-        guard let client = appState.client else { return }
-        do {
-            let bytes = try await client.cacheSize()
-            cacheSize = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-        } catch {
-            cacheSize = "Unknown"
         }
     }
 }
