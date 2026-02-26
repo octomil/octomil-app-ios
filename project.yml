@@ -30,3 +30,4 @@ targets:
         PROVISIONING_PROFILE_SPECIFIER: "Octomil App Store"
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
