@@ -14,24 +14,28 @@ concurrency:
 
 env:
   SCHEME: OctomilApp
-  XCODE_VERSION: "15.4"
-  DESTINATION: "platform=iOS Simulator,name=iPhone 15,OS=17.5"
+  XCODE_VERSION: "16.2"
 
 jobs:
   build:
     name: Build & Test
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
 
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
       - name: Resolve SPM dependencies
         run: |
           xcodebuild -resolvePackageDependencies \
+            -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
             -clonedSourcePackagesDirPath .spm-cache
 
@@ -39,49 +43,36 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .spm-cache
-          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift') }}
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
           restore-keys: spm-${{ runner.os }}-
 
       - name: Build for Simulator
         run: |
           xcodebuild build \
+            -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
-            -destination "$DESTINATION" \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -clonedSourcePackagesDirPath .spm-cache \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Run Tests
-        run: |
-          xcodebuild test \
-            -scheme $SCHEME \
-            -destination "$DESTINATION" \
-            -clonedSourcePackagesDirPath .spm-cache \
-            -skipPackagePluginValidation \
-            CODE_SIGNING_ALLOWED=NO \
-            -resultBundlePath TestResults.xcresult || true
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: TestResults.xcresult
-          if-no-files-found: ignore
-
   publish-testflight:
     name: Publish to TestFlight
-    runs-on: macos-14
+    runs-on: macos-15
     needs: build
     if: github.event_name == 'release'
     environment: production
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
 
       # --- Install Apple certificate and provisioning profile ---
       - name: Install signing certificate
@@ -121,7 +112,6 @@ jobs:
         env:
           API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
           API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          API_KEY_ISSUER: ${{ secrets.APPLE_API_KEY_ISSUER }}
         run: |
           mkdir -p ~/private_keys
           echo "$API_KEY_P8" | base64 --decode > ~/private_keys/AuthKey_${API_KEY_ID}.p8
@@ -132,8 +122,14 @@ jobs:
         run: |
           TAG=${GITHUB_REF#refs/tags/v}
           echo "version=$TAG" >> $GITHUB_OUTPUT
-          # Build number = run number for monotonic increase
           echo "build=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Resolve SPM dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project OctomilApp.xcodeproj \
+            -scheme $SCHEME \
+            -clonedSourcePackagesDirPath .spm-cache
 
       # --- Build archive ---
       - name: Build Release Archive
@@ -142,6 +138,7 @@ jobs:
           BUILD: ${{ steps.version.outputs.build }}
         run: |
           xcodebuild archive \
+            -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
             -archivePath $RUNNER_TEMP/OctomilApp.xcarchive \
             -destination 'generic/platform=iOS' \

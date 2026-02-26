@@ -8,7 +8,7 @@ let package = Package(
         .iOS(.v16),
     ],
     dependencies: [
-        .package(path: "../octomil-server/octomil-ios"),
+        .package(url: "https://github.com/octomil/octomil-ios.git", branch: "main"),
     ],
     targets: [
         .executableTarget(
