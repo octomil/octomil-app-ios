@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>octomil</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>ai.octomil.app</string>
+        </dict>
+    </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Camera is used to scan QR codes for device pairing.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Octomil uses the local network to discover and pair with the CLI.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_octomil._tcp</string>
+    </array>
+</dict>
+</plist>
