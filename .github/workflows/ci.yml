@@ -46,12 +46,15 @@ jobs:
           key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
           restore-keys: spm-${{ runner.os }}-
 
+      - name: List available simulators
+        run: xcrun simctl list devices available | head -30
+
       - name: Build for Simulator
         run: |
           xcodebuild build \
             -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination 'generic/platform=iOS Simulator' \
             -clonedSourcePackagesDirPath .spm-cache \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
