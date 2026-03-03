@@ -2,6 +2,10 @@ import SwiftUI
 import Octomil
 import Network
 
+enum AppTab {
+    case home, pair, settings
+}
+
 /// Shared application state managing client, models, pairing, and local server.
 @MainActor
 final class AppState: ObservableObject {
@@ -83,7 +87,11 @@ final class AppState: ObservableObject {
 
         let name = deviceName
         let port = localPort
+        #if canImport(UIKit)
         let deviceIdString = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+        #else
+        let deviceIdString = UUID().uuidString
+        #endif
 
         var txtDict: [String: String] = [:]
         txtDict["device_name"] = name
