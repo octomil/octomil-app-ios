@@ -39,32 +39,15 @@ struct OctomilAppApp: App {
 
     /// Handle deep links: octomil://pair?token=X&host=Y (or code/server variants)
     private func handleDeepLink(_ url: URL) {
-        guard url.scheme == "octomil", url.host == "pair" else { return }
+        guard let result = DeepLinkHandler.parse(url) else { return }
 
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            return
-        }
-
-        let items = components.queryItems ?? []
-        // Support both token/code and host/server for backwards compat
-        let code = items.first(where: { $0.name == "token" })?.value
-            ?? items.first(where: { $0.name == "code" })?.value
-        let host = items.first(where: { $0.name == "host" })?.value
-            ?? items.first(where: { $0.name == "server" })?.value
-
-        guard let pairingCode = code else { return }
-
-        if let host, !host.isEmpty {
+        if let host = result.host {
             appState.serverURL = host
             appState.initializeClient()
         }
 
-        appState.pendingPairingCode = pairingCode
+        appState.pendingPairingCode = result.pairingCode
         appState.showPairingSheet = true
         appState.selectedTab = .pair
     }
-}
-
-enum AppTab {
-    case home, pair, settings
 }
