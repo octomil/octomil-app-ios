@@ -2,7 +2,7 @@ name: OctomilApp
 options:
   bundleIdPrefix: ai.octomil
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
 
 packages:
   Octomil:
