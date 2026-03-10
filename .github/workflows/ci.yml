@@ -53,7 +53,7 @@ jobs:
           xcodebuild build \
             -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             -clonedSourcePackagesDirPath .spm-cache \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
