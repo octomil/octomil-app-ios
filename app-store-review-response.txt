@@ -1,0 +1,16 @@
+What are your app's main features and intended purpose?
+
+Octomil is a demo app for the Octomil SDK. Developers use our CLI to deploy AI models to mobile devices with a single command (e.g. `octomil deploy qwen-7b --phone`). This app receives those models and runs inference on-device, demonstrating both the developer experience (scan a QR code, model lands on the phone, inference runs immediately) and the fleet management experience (the device registers with our platform dashboard alongside other devices).
+
+The app is not a standalone product — it showcases how easy it is to go from a model in the cloud to on-device inference using our SDK.
+
+Who is your app's intended target audience on the App Store?
+
+Software developers and ML engineers evaluating the Octomil SDK for on-device AI deployment. It is a developer tool, not a consumer product.
+
+How to test the app:
+
+Open the following URL on the test device to pair it with our demo environment:
+octomil://pair?token=[INSERT_TOKEN]&host=[INSERT_HOST]
+
+This will pair the device, download a sample model, and let you run inference via the "Try It Out" screen.
