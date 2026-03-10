@@ -6,6 +6,10 @@ on:
     tags: ["v*"]
   pull_request:
     branches: [main]
+  repository_dispatch:
+    types: [sdk-updated]
+  schedule:
+    - cron: "0 6 * * *" # Nightly at 06:00 UTC
 
 concurrency:
   group: ios-${{ github.ref }}
