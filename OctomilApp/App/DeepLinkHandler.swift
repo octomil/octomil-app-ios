@@ -12,10 +12,12 @@ struct DeepLinkResult {
 /// ```
 /// octomil://pair?token=X&host=Y
 /// octomil://pair?code=X&server=Y
+/// https://octomil.com/pair?token=X&host=Y
 /// ```
 ///
 /// Both `token`/`code` and `host`/`server` parameter names are accepted
-/// for backwards compatibility.
+/// for backwards compatibility. Universal Links (https://octomil.com/pair)
+/// are also supported.
 enum DeepLinkHandler {
 
     /// Parses a deep link URL and returns the pairing info if valid.
@@ -23,7 +25,9 @@ enum DeepLinkHandler {
     /// - Parameter url: The deep link URL to parse.
     /// - Returns: A ``DeepLinkResult`` if the URL is a valid pairing deep link, or `nil`.
     static func parse(_ url: URL) -> DeepLinkResult? {
-        guard url.scheme == "octomil", url.host == "pair" else { return nil }
+        let isCustomScheme = url.scheme == "octomil" && url.host == "pair"
+        let isUniversalLink = url.scheme == "https" && url.host == "octomil.com" && url.path == "/pair"
+        guard isCustomScheme || isUniversalLink else { return nil }
 
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return nil
