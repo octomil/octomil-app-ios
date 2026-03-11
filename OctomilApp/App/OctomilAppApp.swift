@@ -30,6 +30,10 @@ struct OctomilAppApp: App {
             .onOpenURL { url in
                 handleDeepLink(url)
             }
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                guard let url = activity.webpageURL else { return }
+                handleDeepLink(url)
+            }
             .task {
                 appState.startLocalServer()
                 appState.startAdvertising()

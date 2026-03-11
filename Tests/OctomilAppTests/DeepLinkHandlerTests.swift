@@ -96,6 +96,36 @@ struct DeepLinkHandlerTests {
         #expect(result == nil)
     }
 
+    // MARK: - Universal Links
+
+    @Test("Parses Universal Link with token and host")
+    func parseUniversalLinkWithTokenAndHost() {
+        let url = URL(string: "https://octomil.com/pair?token=ABC123&host=https://api.octomil.com")!
+        let result = DeepLinkHandler.parse(url)
+
+        #expect(result != nil)
+        #expect(result?.pairingCode == "ABC123")
+        #expect(result?.host == "https://api.octomil.com")
+    }
+
+    @Test("Parses Universal Link with code and server (backwards compat)")
+    func parseUniversalLinkWithCodeAndServer() {
+        let url = URL(string: "https://octomil.com/pair?code=XYZ&server=https://staging.octomil.com")!
+        let result = DeepLinkHandler.parse(url)
+
+        #expect(result != nil)
+        #expect(result?.pairingCode == "XYZ")
+        #expect(result?.host == "https://staging.octomil.com")
+    }
+
+    @Test("Rejects Universal Link with wrong host")
+    func parseRejectsUniversalLinkWrongHost() {
+        let url = URL(string: "https://other.com/pair?token=ABC")!
+        let result = DeepLinkHandler.parse(url)
+
+        #expect(result == nil)
+    }
+
     // MARK: - Edge Cases
 
     @Test("Treats empty host as nil")
