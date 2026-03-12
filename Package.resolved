@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/octomil/octomil-ios.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "5aa7f98edf55dd3bbcef6fa4f5d0aaa31f4f62aa"
+        "revision" : "5aa7f98edf55dd3bbcef6fa4f5d0aaa31f4f62aa",
+        "version" : "1.1.1"
       }
     },
     {
