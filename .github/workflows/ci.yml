@@ -35,19 +35,19 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: .spm-cache
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml', 'Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
       - name: Resolve SPM dependencies
         run: |
           xcodebuild -resolvePackageDependencies \
             -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
             -clonedSourcePackagesDirPath .spm-cache
-
-      - name: Cache SPM packages
-        uses: actions/cache@v4
-        with:
-          path: .spm-cache
-          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
-          restore-keys: spm-${{ runner.os }}-
 
       - name: Install iOS Simulator runtime
         run: |
