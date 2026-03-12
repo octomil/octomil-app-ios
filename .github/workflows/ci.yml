@@ -44,6 +44,7 @@ jobs:
 
       - name: Resolve SPM dependencies
         run: |
+          rm -rf .spm-cache/checkouts/octomil-ios
           xcodebuild -resolvePackageDependencies \
             -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
@@ -136,6 +137,7 @@ jobs:
 
       - name: Resolve SPM dependencies
         run: |
+          rm -rf .spm-cache/checkouts/octomil-ios
           xcodebuild -resolvePackageDependencies \
             -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
