@@ -24,7 +24,7 @@ jobs:
     name: Build & Test
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
@@ -74,7 +74,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
