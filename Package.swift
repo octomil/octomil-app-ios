@@ -23,10 +23,13 @@ let package = Package(
                 "Assets.xcassets",
                 "Info.plist",
                 "App/OctomilAppApp.swift",
+                "Screens/ChatScreen.swift",
                 "Screens/HomeScreen.swift",
                 "Screens/ModelDetailScreen.swift",
                 "Screens/PairScreen.swift",
+                "Screens/PredictionScreen.swift",
                 "Screens/SettingsScreen.swift",
+                "Screens/TranscriptionScreen.swift",
             ],
             swiftSettings: [
                 .swiftLanguageMode(.v5),
