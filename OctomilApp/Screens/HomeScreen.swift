@@ -77,6 +77,26 @@ struct HomeScreen: View {
                     }
                 }
 
+                Section("Features") {
+                    NavigationLink {
+                        ChatScreen()
+                    } label: {
+                        Label("Chat", systemImage: "bubble.left.and.bubble.right")
+                    }
+
+                    NavigationLink {
+                        TranscriptionScreen()
+                    } label: {
+                        Label("Transcription", systemImage: "waveform")
+                    }
+
+                    NavigationLink {
+                        PredictionScreen()
+                    } label: {
+                        Label("Prediction", systemImage: "text.cursor")
+                    }
+                }
+
                 Section("Network") {
                     LabeledContent("Device Name", value: appState.deviceName)
                     if appState.localPort > 0 {
