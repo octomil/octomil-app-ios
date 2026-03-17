@@ -118,11 +118,11 @@ struct PredictionScreen: View {
 
         Task {
             do {
-                let results = try await client.text.predict(prefix: text, maxSuggestions: 5)
+                let result = try await client.text.predictions.create(input: text, n: 5)
                 await MainActor.run {
-                    suggestions = results
+                    suggestions = result.predictions.map(\.text)
                     isPredicting = false
-                    if results.isEmpty {
+                    if result.predictions.isEmpty {
                         statusMessage = "No suggestions generated. Try different input text."
                     } else {
                         statusMessage = "Tap a suggestion to append it."
