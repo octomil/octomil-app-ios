@@ -1,5 +1,5 @@
 import SwiftUI
-import Octomil
+import OctomilClient
 
 struct SettingsScreen: View {
     @EnvironmentObject private var appState: AppState

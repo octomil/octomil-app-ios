@@ -16,7 +16,7 @@ let package = Package(
         .target(
             name: "OctomilAppLib",
             dependencies: [
-                .product(name: "Octomil", package: "octomil-ios"),
+                .product(name: "OctomilClient", package: "octomil-ios"),
             ],
             path: "OctomilApp",
             exclude: [
