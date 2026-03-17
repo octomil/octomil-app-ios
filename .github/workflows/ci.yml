@@ -147,6 +147,14 @@ jobs:
             -scheme $SCHEME \
             -clonedSourcePackagesDirPath .spm-cache
 
+      - name: Install iOS platform
+        run: |
+          for i in 1 2 3; do
+            xcodebuild -downloadPlatform iOS && break
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+
       # --- Build archive ---
       - name: Build Release Archive
         env:
