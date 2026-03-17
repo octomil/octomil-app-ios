@@ -50,6 +50,15 @@ jobs:
             -scheme $SCHEME \
             -clonedSourcePackagesDirPath .spm-cache
 
+      - name: Install iOS platform
+        run: |
+          # Retry up to 3 times — runner connectivity to simulator service is flaky
+          for i in 1 2 3; do
+            xcodebuild -downloadPlatform iOS && break
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+
       - name: Build for iOS (device, unsigned)
         run: |
           xcodebuild build \
