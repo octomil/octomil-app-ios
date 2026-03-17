@@ -45,12 +45,17 @@ final class AppState: ObservableObject {
     func initializeClient() {
         guard !deviceToken.isEmpty, !orgId.isEmpty else { return }
         let baseURL = URL(string: serverURL) ?? OctomilClient.defaultServerURL
-        client = OctomilClient(deviceAccessToken: deviceToken, orgId: orgId, serverURL: baseURL)
+        let auth = AuthConfig.deviceToken(
+            deviceId: orgId,
+            bootstrapToken: deviceToken,
+            serverURL: baseURL
+        )
+        client = OctomilClient(auth: auth)
     }
 
     func register() async throws {
         guard let client else { return }
-        _ = try await client.register()
+        _ = try await client.register(deviceId: nil, appVersion: nil, metadata: nil)
         isRegistered = client.isRegistered
     }
 
