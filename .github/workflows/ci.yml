@@ -51,6 +51,7 @@ jobs:
             -clonedSourcePackagesDirPath .spm-cache
 
       - name: Install iOS Simulator runtime
+        continue-on-error: true
         run: |
           xcodebuild -downloadPlatform iOS
 
