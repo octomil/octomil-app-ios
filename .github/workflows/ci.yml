@@ -50,20 +50,12 @@ jobs:
             -scheme $SCHEME \
             -clonedSourcePackagesDirPath .spm-cache
 
-      - name: Install iOS Simulator runtime
-        continue-on-error: true
-        run: |
-          xcodebuild -downloadPlatform iOS
-
-      - name: List available simulators
-        run: xcrun simctl list devices available | head -30
-
-      - name: Build for Simulator
+      - name: Build for iOS (device, unsigned)
         run: |
           xcodebuild build \
             -project OctomilApp.xcodeproj \
             -scheme $SCHEME \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'generic/platform=iOS' \
             -clonedSourcePackagesDirPath .spm-cache \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
