@@ -17,7 +17,7 @@ targets:
       - OctomilApp
     dependencies:
       - package: Octomil
-        product: OctomilClient
+        product: Octomil
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.octomil.app

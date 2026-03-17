@@ -1,5 +1,5 @@
 import SwiftUI
-import OctomilClient
+import Octomil
 
 struct ModelDetailScreen: View {
     let model: PairedModelInfo

@@ -1,5 +1,5 @@
 import SwiftUI
-import OctomilClient
+import Octomil
 
 struct ChatScreen: View {
     @EnvironmentObject private var appState: AppState
