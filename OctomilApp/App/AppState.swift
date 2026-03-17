@@ -1,5 +1,5 @@
 import SwiftUI
-import Octomil
+import OctomilClient
 import Network
 
 enum AppTab {

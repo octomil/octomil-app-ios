@@ -1,6 +1,6 @@
 import SwiftUI
 import AVFoundation
-import Octomil
+import OctomilClient
 
 struct TranscriptionScreen: View {
     @EnvironmentObject private var appState: AppState

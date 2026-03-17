@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 @testable import OctomilAppLib
-import Octomil
+import OctomilClient
 
 /// Clears the @AppStorage keys used by AppState so each test starts fresh.
 private func resetAppStorageDefaults() {

@@ -41,7 +41,11 @@
         </dict>
     </array>
     <key>NSCameraUsageDescription</key>
-    <string>Camera is used to scan QR codes for device pairing.</string>
+    <string>Camera is used to scan QR codes and capture images for vision models.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Select photos for vision and classification models.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Record audio for speech and audio models.</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Octomil uses the local network to discover and pair with the CLI.</string>
     <key>NSBonjourServices</key>
