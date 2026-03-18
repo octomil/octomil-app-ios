@@ -142,6 +142,7 @@ final class AppState: ObservableObject {
         } else {
             storedModels.append(model)
         }
+        registerRuntime(for: model)
         persistStoredModels()
     }
 
@@ -159,6 +160,18 @@ final class AppState: ObservableObject {
             return
         }
         storedModels = models
+        for model in models {
+            registerRuntime(for: model)
+        }
+    }
+
+    /// Register a ``LocalFileModelRuntime`` for a stored model so that
+    /// ``ModelRuntimeRegistry.shared.resolve(modelId:)`` can find it.
+    private func registerRuntime(for model: StoredModel) {
+        guard let url = model.compiledModelURL else { return }
+        ModelRuntimeRegistry.shared.register(family: model.name) { _ in
+            LocalFileModelRuntime(modelId: model.name, fileURL: url)
+        }
     }
 
     private func persistStoredModels() {
