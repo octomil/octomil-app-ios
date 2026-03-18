@@ -192,7 +192,7 @@ struct TranscriptionScreen: View {
         Task {
             do {
                 let audioData = try Data(contentsOf: url)
-                let result = try await client.audio.transcriptions.create(audio: audioData)
+                let result = try await client.audio.transcriptions.create(audio: audioData, model: model.name)
                 await MainActor.run {
                     transcriptionText = result.text
                     statusMessage = "Tap the microphone to record again."
