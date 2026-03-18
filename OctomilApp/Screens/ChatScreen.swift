@@ -3,6 +3,8 @@ import Octomil
 
 struct ChatScreen: View {
     @EnvironmentObject private var appState: AppState
+    let model: StoredModel
+
     @State private var messages: [ChatMessage] = []
     @State private var inputText = ""
     @State private var streamingText = ""
@@ -90,7 +92,7 @@ struct ChatScreen: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .navigationTitle("Chat")
+        .navigationTitle(model.name)
         .onDisappear {
             cancelGeneration()
         }
@@ -104,7 +106,7 @@ struct ChatScreen: View {
             Text("Start a conversation")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Messages are processed on-device using your paired model.")
+            Text("Messages are processed on-device using \(model.name).")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -130,7 +132,7 @@ struct ChatScreen: View {
         streamingText = ""
 
         let chat = OctomilChat(
-            modelName: appState.pairedModels.first?.name ?? "default",
+            modelName: model.name,
             responses: client.responses
         )
 

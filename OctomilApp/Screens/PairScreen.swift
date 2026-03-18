@@ -14,9 +14,17 @@ struct PairScreen: View {
                         token: code,
                         host: appState.serverURL,
                         onTryModel: { modelInfo in
+                            let (capability, streaming) = StoredModel.inferCapability(from: modelInfo.runtime)
+                            let stored = StoredModel(
+                                from: modelInfo,
+                                capability: capability,
+                                supportsStreaming: streaming
+                            )
                             appState.addPairedModel(modelInfo)
+                            appState.addStoredModel(stored)
                             appState.showPairingSheet = false
                             appState.pendingPairingCode = nil
+                            appState.selectedTab = .home
                         }
                     )
                 } else {

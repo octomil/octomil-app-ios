@@ -2,7 +2,7 @@ import SwiftUI
 import Octomil
 
 struct ModelDetailScreen: View {
-    let model: PairedModelInfo
+    let model: StoredModel
 
     var body: some View {
         List {
@@ -11,22 +11,33 @@ struct ModelDetailScreen: View {
                 LabeledContent("Version", value: model.version)
                 LabeledContent("Size", value: model.sizeString)
                 LabeledContent("Runtime", value: model.runtime)
+                LabeledContent("Capability", value: model.capabilityLabel)
+                LabeledContent("Streaming", value: model.supportsStreaming ? "Yes" : "No")
                 if let tps = model.tokensPerSecond {
                     LabeledContent("Tokens/sec", value: String(format: "%.1f", tps))
-                }
-                if let modality = model.modality {
-                    LabeledContent("Modality", value: modality)
                 }
             }
 
             Section("Try It Out") {
                 NavigationLink {
-                    TryItOutScreen(modelInfo: model)
+                    destinationView(for: model)
                 } label: {
-                    Label("Open Interactive Demo", systemImage: "play.fill")
+                    Label("Open \(model.capabilityLabel)", systemImage: model.capabilityIcon)
                 }
             }
         }
         .navigationTitle(model.name)
+    }
+
+    @ViewBuilder
+    private func destinationView(for model: StoredModel) -> some View {
+        switch model.capability {
+        case .transcription:
+            TranscriptionScreen(model: model)
+        case .chat:
+            ChatScreen(model: model)
+        case .keyboardPrediction:
+            PredictionScreen(model: model)
+        }
     }
 }

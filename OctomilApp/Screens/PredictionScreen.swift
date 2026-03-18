@@ -3,6 +3,8 @@ import Octomil
 
 struct PredictionScreen: View {
     @EnvironmentObject private var appState: AppState
+    let model: StoredModel
+
     @State private var inputText = "The weather today is"
     @State private var suggestions: [String] = []
     @State private var isPredicting = false
@@ -91,7 +93,7 @@ struct PredictionScreen: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .navigationTitle("Prediction")
+        .navigationTitle(model.name)
     }
 
     private func appendSuggestion(_ word: String) {
