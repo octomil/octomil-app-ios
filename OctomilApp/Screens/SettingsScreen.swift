@@ -88,6 +88,7 @@ struct SettingsScreen: View {
             do {
                 try await client.clearCache()
                 appState.pairedModels.removeAll()
+                appState.storedModels.removeAll()
                 statusMessage = "Cache cleared"
             } catch {
                 statusMessage = "Failed: \(error.localizedDescription)"

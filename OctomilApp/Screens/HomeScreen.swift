@@ -51,49 +51,46 @@ struct HomeScreen: View {
                 }
 
                 Section("Paired Models") {
-                    if appState.pairedModels.isEmpty {
+                    if appState.storedModels.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("No models deployed yet")
                                 .foregroundStyle(.secondary)
-                            Text("Deploy a model with `octomil deploy <model> --phone`")
+                            Text("Scan a QR code to get started.")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
                         .padding(.vertical, 4)
                     } else {
-                        ForEach(appState.pairedModels, id: \.name) { model in
+                        ForEach(appState.storedModels) { model in
                             NavigationLink {
-                                ModelDetailScreen(model: model)
+                                destinationView(for: model)
                             } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(model.name)
-                                        .font(.headline)
-                                    Text("v\(model.version) \u{00B7} \(model.runtime)")
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(model.name)
+                                            .font(.headline)
+                                        Text("v\(model.version) \u{00B7} \(model.sizeString)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Label(model.capabilityLabel, systemImage: model.capabilityIcon)
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(capabilityColor(model.capability))
+                                        .clipShape(Capsule())
                                 }
                             }
                         }
-                    }
-                }
-
-                Section("Features") {
-                    NavigationLink {
-                        ChatScreen()
-                    } label: {
-                        Label("Chat", systemImage: "bubble.left.and.bubble.right")
-                    }
-
-                    NavigationLink {
-                        TranscriptionScreen()
-                    } label: {
-                        Label("Transcription", systemImage: "waveform")
-                    }
-
-                    NavigationLink {
-                        PredictionScreen()
-                    } label: {
-                        Label("Prediction", systemImage: "text.cursor")
+                        .onDelete { indexSet in
+                            for index in indexSet {
+                                appState.removeStoredModel(appState.storedModels[index])
+                            }
+                        }
                     }
                 }
 
@@ -105,6 +102,26 @@ struct HomeScreen: View {
                 }
             }
             .navigationTitle("Octomil")
+        }
+    }
+
+    @ViewBuilder
+    private func destinationView(for model: StoredModel) -> some View {
+        switch model.capability {
+        case .transcription:
+            TranscriptionScreen(model: model)
+        case .chat:
+            ChatScreen(model: model)
+        case .keyboardPrediction:
+            PredictionScreen(model: model)
+        }
+    }
+
+    private func capabilityColor(_ capability: ModelCapability) -> Color {
+        switch capability {
+        case .transcription: return .purple
+        case .chat: return .blue
+        case .keyboardPrediction: return .orange
         }
     }
 

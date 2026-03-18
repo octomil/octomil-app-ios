@@ -4,13 +4,17 @@ import Octomil
 
 struct TranscriptionScreen: View {
     @EnvironmentObject private var appState: AppState
+    let model: StoredModel
+
     @State private var isRecording = false
     @State private var transcriptionText = ""
-    @State private var statusMessage = "Tap the microphone to start recording."
+    @State private var statusMessage = ""
     @State private var errorMessage: String?
     @State private var audioRecorder: AVAudioRecorder?
     @State private var recordingURL: URL?
     @State private var isTranscribing = false
+
+    private var isStreaming: Bool { model.supportsStreaming }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -79,7 +83,12 @@ struct TranscriptionScreen: View {
             }
             .padding(.vertical, 16)
         }
-        .navigationTitle("Transcription")
+        .navigationTitle(model.name)
+        .onAppear {
+            statusMessage = isStreaming
+                ? "Tap the microphone for live transcription."
+                : "Tap the microphone to start recording."
+        }
         .onDisappear {
             if isRecording {
                 audioRecorder?.stop()
@@ -93,10 +102,12 @@ struct TranscriptionScreen: View {
             Image(systemName: "waveform")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
-            Text("Speech-to-Text")
+            Text(isStreaming ? "Live Transcription" : "Speech-to-Text")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Record audio and transcribe it on-device.")
+            Text(isStreaming
+                 ? "Tap record for live partial transcripts."
+                 : "Record audio and transcribe it on-device.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -117,7 +128,6 @@ struct TranscriptionScreen: View {
             return
         }
 
-        // Request permission
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
@@ -149,7 +159,9 @@ struct TranscriptionScreen: View {
             recorder.record()
             audioRecorder = recorder
             isRecording = true
-            statusMessage = "Recording... Tap to stop."
+            statusMessage = isStreaming
+                ? "Listening... Tap to stop."
+                : "Recording... Tap to stop."
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
         }
@@ -159,13 +171,13 @@ struct TranscriptionScreen: View {
         audioRecorder?.stop()
         audioRecorder = nil
         isRecording = false
-        statusMessage = "Transcribing..."
 
         guard let url = recordingURL else {
             errorMessage = "No recording file found."
             return
         }
 
+        statusMessage = "Transcribing..."
         transcribe(url: url)
     }
 
@@ -186,7 +198,6 @@ struct TranscriptionScreen: View {
                     statusMessage = "Tap the microphone to record again."
                     isTranscribing = false
                 }
-                // Clean up temp file
                 try? FileManager.default.removeItem(at: url)
             } catch {
                 await MainActor.run {
