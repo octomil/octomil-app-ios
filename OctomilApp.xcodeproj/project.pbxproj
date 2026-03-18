@@ -1,0 +1,412 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0204D132821CE448548EF15A /* Octomil in Frameworks */ = {isa = PBXBuildFile; productRef = 6B3AB72E7BC7B8D7E89C8B4C /* Octomil */; };
+		0D3FB7344DF00C6266BA3E86 /* OctomilAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E63A4141147E14858F4D29D /* OctomilAppApp.swift */; };
+		171F7D5B203B6E4F8BEE2355 /* PairScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */; };
+		1E6982A18899B8ED30603570 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */; };
+		2B0A6A91DE1D600530332EAE /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C282159C16328D248F7FC20 /* AppState.swift */; };
+		4386FFBC90B27586E926EEF2 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 749907724BE46978D119E6FC /* SettingsScreen.swift */; };
+		55D06F2AB37B91366D656250 /* ModelDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */; };
+		9647DD8A661B95103F849EE6 /* ChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */; };
+		992EC351422E57C126C99AA9 /* LocalPairingServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */; };
+		CFDD6E6111A3844AB4E8F92E /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F94D3E05A116232C121770 /* DeepLinkHandler.swift */; };
+		D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10129DD329B19C97CC1E54E /* PredictionScreen.swift */; };
+		D69BDA17530EB11FB912F932 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4F0D21B46F6F7F43840203C6 /* Assets.xcassets */; };
+		F34498BFCC3E50D107D6CA5E /* TranscriptionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE501ED911600D4CA0E45777 /* TranscriptionScreen.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDetailScreen.swift; sourceTree = "<group>"; };
+		0E63A4141147E14858F4D29D /* OctomilAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OctomilAppApp.swift; sourceTree = "<group>"; };
+		17067B1AF88E90FE97F50F93 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairScreen.swift; sourceTree = "<group>"; };
+		40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OctomilApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4F0D21B46F6F7F43840203C6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		6C282159C16328D248F7FC20 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPairingServer.swift; sourceTree = "<group>"; };
+		749907724BE46978D119E6FC /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
+		B468BDF227370D5DD27972A2 /* OctomilApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OctomilApp.entitlements; sourceTree = "<group>"; };
+		C10129DD329B19C97CC1E54E /* PredictionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PredictionScreen.swift; sourceTree = "<group>"; };
+		CE501ED911600D4CA0E45777 /* TranscriptionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionScreen.swift; sourceTree = "<group>"; };
+		E3F94D3E05A116232C121770 /* DeepLinkHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkHandler.swift; sourceTree = "<group>"; };
+		F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScreen.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8F955AD404DF88E0F33D57E4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0204D132821CE448548EF15A /* Octomil in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		270581B43D2CD2575CB31FE5 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		5F6C76878614711D1D9AD10B /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */,
+				3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */,
+				0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */,
+				3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */,
+				C10129DD329B19C97CC1E54E /* PredictionScreen.swift */,
+				749907724BE46978D119E6FC /* SettingsScreen.swift */,
+				CE501ED911600D4CA0E45777 /* TranscriptionScreen.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		B5D015E7BF27563A278D3789 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				6C282159C16328D248F7FC20 /* AppState.swift */,
+				E3F94D3E05A116232C121770 /* DeepLinkHandler.swift */,
+				0E63A4141147E14858F4D29D /* OctomilAppApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		BE233935C7E433C57CE28B4F = {
+			isa = PBXGroup;
+			children = (
+				D3565E3C493F9FF603D84109 /* OctomilApp */,
+				DDDC74A0DE50C18A039A7733 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D3565E3C493F9FF603D84109 /* OctomilApp */ = {
+			isa = PBXGroup;
+			children = (
+				4F0D21B46F6F7F43840203C6 /* Assets.xcassets */,
+				17067B1AF88E90FE97F50F93 /* Info.plist */,
+				B468BDF227370D5DD27972A2 /* OctomilApp.entitlements */,
+				B5D015E7BF27563A278D3789 /* App */,
+				5F6C76878614711D1D9AD10B /* Screens */,
+				270581B43D2CD2575CB31FE5 /* Services */,
+			);
+			path = OctomilApp;
+			sourceTree = "<group>";
+		};
+		DDDC74A0DE50C18A039A7733 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AD2FD6A0242B4D1906E8B4A1 /* OctomilApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4F7D497A80DA25CFE0D311E9 /* Build configuration list for PBXNativeTarget "OctomilApp" */;
+			buildPhases = (
+				19EAAF375B294A6B497ACA11 /* Sources */,
+				D3AA7B3071027ABF91C97E0D /* Resources */,
+				8F955AD404DF88E0F33D57E4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OctomilApp;
+			packageProductDependencies = (
+				6B3AB72E7BC7B8D7E89C8B4C /* Octomil */,
+			);
+			productName = OctomilApp;
+			productReference = 40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8742B5E138DA555D4D68F33C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = DB9C0354843A0A33BC4023B3 /* Build configuration list for PBXProject "OctomilApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BE233935C7E433C57CE28B4F;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				321C74B26AAD168A049A1692 /* XCRemoteSwiftPackageReference "octomil-ios" */,
+			);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AD2FD6A0242B4D1906E8B4A1 /* OctomilApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D3AA7B3071027ABF91C97E0D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D69BDA17530EB11FB912F932 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		19EAAF375B294A6B497ACA11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B0A6A91DE1D600530332EAE /* AppState.swift in Sources */,
+				9647DD8A661B95103F849EE6 /* ChatScreen.swift in Sources */,
+				CFDD6E6111A3844AB4E8F92E /* DeepLinkHandler.swift in Sources */,
+				1E6982A18899B8ED30603570 /* HomeScreen.swift in Sources */,
+				992EC351422E57C126C99AA9 /* LocalPairingServer.swift in Sources */,
+				55D06F2AB37B91366D656250 /* ModelDetailScreen.swift in Sources */,
+				0D3FB7344DF00C6266BA3E86 /* OctomilAppApp.swift in Sources */,
+				171F7D5B203B6E4F8BEE2355 /* PairScreen.swift in Sources */,
+				D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */,
+				4386FFBC90B27586E926EEF2 /* SettingsScreen.swift in Sources */,
+				F34498BFCC3E50D107D6CA5E /* TranscriptionScreen.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2645175F5CD163DB97604618 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7A41478CF49169FCF33B0A5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = OctomilApp/OctomilApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 32MGT8HBSL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OctomilApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.octomil.app;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BC4FB98013C66DCF1F89FA8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EB240E1E3CDFCD2D5378F550 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = OctomilApp/OctomilApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 32MGT8HBSL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OctomilApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.octomil.app;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4F7D497A80DA25CFE0D311E9 /* Build configuration list for PBXNativeTarget "OctomilApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A41478CF49169FCF33B0A5C /* Debug */,
+				EB240E1E3CDFCD2D5378F550 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DB9C0354843A0A33BC4023B3 /* Build configuration list for PBXProject "OctomilApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC4FB98013C66DCF1F89FA8C /* Debug */,
+				2645175F5CD163DB97604618 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		321C74B26AAD168A049A1692 /* XCRemoteSwiftPackageReference "octomil-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/octomil/octomil-ios.git";
+			requirement = {
+				kind = branch;
+				branch = main;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6B3AB72E7BC7B8D7E89C8B4C /* Octomil */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 321C74B26AAD168A049A1692 /* XCRemoteSwiftPackageReference "octomil-ios" */;
+			productName = Octomil;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8742B5E138DA555D4D68F33C /* Project object */;
+}
