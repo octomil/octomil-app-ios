@@ -182,19 +182,31 @@ struct TranscriptionScreen: View {
     }
 
     private func transcribe(url: URL) {
-        guard let client = appState.client else {
-            errorMessage = "No client configured. Set device token in Settings."
-            return
-        }
-
         isTranscribing = true
 
         Task {
             do {
                 let audioData = try Data(contentsOf: url)
-                let result = try await client.audio.transcriptions.create(audio: audioData, model: model.name)
+
+                // Try the API client first, fall back to local runtime registry
+                // (paired on-device models don't need a client/device token).
+                if let client = appState.client {
+                    let result = try await client.audio.transcriptions.create(audio: audioData, model: model.name)
+                    await MainActor.run {
+                        transcriptionText = result.text
+                    }
+                } else if let runtime = ModelRuntimeRegistry.shared.resolve(modelId: model.name) {
+                    let request = RuntimeRequest(prompt: "", mediaData: audioData, mediaType: "audio")
+                    let response = try await runtime.run(request: request)
+                    await MainActor.run {
+                        transcriptionText = response.text
+                    }
+                } else {
+                    throw NSError(domain: "Octomil", code: 0,
+                                  userInfo: [NSLocalizedDescriptionKey: "No runtime found for '\(model.name)'."])
+                }
+
                 await MainActor.run {
-                    transcriptionText = result.text
                     statusMessage = "Tap the microphone to record again."
                     isTranscribing = false
                 }

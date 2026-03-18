@@ -5,6 +5,7 @@ struct HomeScreen: View {
     @EnvironmentObject private var appState: AppState
     @State private var isRegistering = false
     @State private var errorMessage: String?
+    @State private var modelToDelete: StoredModel?
 
     var body: some View {
         NavigationStack {
@@ -87,8 +88,8 @@ struct HomeScreen: View {
                             }
                         }
                         .onDelete { indexSet in
-                            for index in indexSet {
-                                appState.removeStoredModel(appState.storedModels[index])
+                            if let index = indexSet.first {
+                                modelToDelete = appState.storedModels[index]
                             }
                         }
                     }
@@ -102,6 +103,24 @@ struct HomeScreen: View {
                 }
             }
             .navigationTitle("Octomil")
+            .alert("Delete Model", isPresented: Binding(
+                get: { modelToDelete != nil },
+                set: { if !$0 { modelToDelete = nil } }
+            )) {
+                Button("Delete", role: .destructive) {
+                    if let model = modelToDelete {
+                        appState.removeStoredModel(model)
+                        modelToDelete = nil
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    modelToDelete = nil
+                }
+            } message: {
+                if let model = modelToDelete {
+                    Text("Remove \(model.name) from this device?")
+                }
+            }
         }
     }
 

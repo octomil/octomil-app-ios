@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -28,7 +28,7 @@
 		17067B1AF88E90FE97F50F93 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairScreen.swift; sourceTree = "<group>"; };
-		40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OctomilApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OctomilApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F0D21B46F6F7F43840203C6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6C282159C16328D248F7FC20 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPairingServer.swift; sourceTree = "<group>"; };
@@ -144,6 +144,12 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					AD2FD6A0242B4D1906E8B4A1 = {
+						DevelopmentTeam = 32MGT8HBSL;
+						ProvisioningStyle = Manual;
+					};
+				};
 			};
 			buildConfigurationList = DB9C0354843A0A33BC4023B3 /* Build configuration list for PBXProject "OctomilApp" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -158,6 +164,7 @@
 			packageReferences = (
 				321C74B26AAD168A049A1692 /* XCRemoteSwiftPackageReference "octomil-ios" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -260,8 +267,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OctomilApp/OctomilApp.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 32MGT8HBSL;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -272,7 +279,7 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.octomil.app;
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PROVISIONING_PROFILE_SPECIFIER = "Octomil App Store";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -347,8 +354,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OctomilApp/OctomilApp.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 32MGT8HBSL;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -359,7 +366,7 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.octomil.app;
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PROVISIONING_PROFILE_SPECIFIER = "Octomil App Store";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -394,8 +401,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/octomil/octomil-ios.git";
 			requirement = {
-				kind = branch;
-				branch = main;
+				kind = revision;
+				revision = 028b62ca19a01ae1b667bd8280f57925d01248f2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
