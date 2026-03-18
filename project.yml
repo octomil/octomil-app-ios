@@ -7,7 +7,7 @@ options:
 packages:
   Octomil:
     url: https://github.com/octomil/octomil-ios.git
-    branch: main
+    revision: 6a3499c415e081607bb703b813b85ec3638c81e4
 
 targets:
   OctomilApp:
