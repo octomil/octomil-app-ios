@@ -27,6 +27,8 @@ struct StoredModel: Codable, Identifiable {
     let capability: ModelCapability
     let supportsStreaming: Bool
     let modelPath: String?
+    /// Resource kind → filename mapping for resolving individual files within the model directory.
+    let resourceBindings: [String: String]?
 
     init(from pairedModel: PairedModelInfo, capability: ModelCapability, supportsStreaming: Bool) {
         self.id = pairedModel.name
@@ -38,6 +40,7 @@ struct StoredModel: Codable, Identifiable {
         self.capability = capability
         self.supportsStreaming = supportsStreaming
         self.modelPath = pairedModel.compiledModelURL?.path
+        self.resourceBindings = pairedModel.resourceBindings.isEmpty ? nil : pairedModel.resourceBindings
     }
 
     var compiledModelURL: URL? {
@@ -191,8 +194,24 @@ final class AppState: ObservableObject {
             return
         }
         let engine = Engine(executor: model.runtime)
+
+        // Convert string-keyed resource bindings to typed ArtifactResourceKind → URL
+        var resolvedBindings: [ArtifactResourceKind: URL] = [:]
+        if let bindings = model.resourceBindings {
+            for (kindString, filename) in bindings {
+                if let kind = ArtifactResourceKind(rawValue: kindString) {
+                    resolvedBindings[kind] = url.appendingPathComponent(filename)
+                }
+            }
+        }
+
         ModelRuntimeRegistry.shared.register(family: model.name) { _ in
-            LocalFileModelRuntime(modelId: model.name, fileURL: url, engine: engine)
+            LocalFileModelRuntime(
+                modelId: model.name,
+                fileURL: url,
+                resourceBindings: resolvedBindings,
+                engine: engine
+            )
         }
     }
 
