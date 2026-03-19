@@ -347,7 +347,8 @@ struct TranscriptionScreen: View {
                 let audioData = try Data(contentsOf: url)
 
                 if let runtime = ModelRuntimeRegistry.shared.resolve(modelId: model.name) {
-                    let request = RuntimeRequest(prompt: "", mediaData: audioData, mediaType: "audio")
+                    let message = RuntimeMessage(role: .user, parts: [.audio(data: audioData, mediaType: "audio/wav")])
+                    let request = RuntimeRequest(messages: [message])
                     let response = try await runtime.run(request: request)
                     let cleanText = response.text
                         .replacingOccurrences(of: "\0", with: "")
