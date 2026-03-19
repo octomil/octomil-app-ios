@@ -22,6 +22,13 @@ struct PairScreen: View {
                             )
                             appState.addPairedModel(modelInfo)
                             appState.addStoredModel(stored)
+                            // Auto-register device using credentials from pairing
+                            if let token = modelInfo.accessToken, !token.isEmpty,
+                               let org = modelInfo.orgId, !org.isEmpty {
+                                appState.deviceToken = token
+                                appState.orgId = org
+                                appState.initializeClient()
+                            }
                             appState.showPairingSheet = false
                             appState.pendingPairingCode = nil
                             appState.selectedTab = .home
