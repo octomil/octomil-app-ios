@@ -1,9 +1,13 @@
 import SwiftUI
-import Octomil
+import OctomilClient
 
 @main
 struct OctomilAppApp: App {
     @StateObject private var appState = AppState()
+
+    init() {
+        ensureEnginesRegistered()
+    }
 
     var body: some Scene {
         WindowGroup {

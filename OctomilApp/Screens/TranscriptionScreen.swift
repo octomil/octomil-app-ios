@@ -10,9 +10,16 @@ struct TranscriptionScreen: View {
     @State private var transcriptionText = ""
     @State private var statusMessage = ""
     @State private var errorMessage: String?
+    @State private var isTranscribing = false
+
+    // Batch recording (whisper)
     @State private var audioRecorder: AVAudioRecorder?
     @State private var recordingURL: URL?
-    @State private var isTranscribing = false
+
+    // Live transcription (sherpa)
+    @State private var liveTranscriber: LiveTranscriber?
+    @State private var audioEngine: AVAudioEngine?
+    @State private var pollingTimer: Timer?
 
     private var isStreaming: Bool { model.supportsStreaming }
 
@@ -90,10 +97,9 @@ struct TranscriptionScreen: View {
                 : "Tap the microphone to start recording."
         }
         .onDisappear {
-            if isRecording {
-                audioRecorder?.stop()
-                isRecording = false
-            }
+            tearDownLiveTranscription()
+            audioRecorder?.stop()
+            isRecording = false
         }
     }
 
@@ -116,6 +122,8 @@ struct TranscriptionScreen: View {
         .padding(.top, 60)
     }
 
+    // MARK: - Recording
+
     private func startRecording() {
         errorMessage = nil
 
@@ -131,7 +139,11 @@ struct TranscriptionScreen: View {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
-                    beginRecording()
+                    if isStreaming {
+                        beginLiveRecording()
+                    } else {
+                        beginBatchRecording()
+                    }
                 } else {
                     errorMessage = "Microphone permission denied."
                 }
@@ -139,7 +151,146 @@ struct TranscriptionScreen: View {
         }
     }
 
-    private func beginRecording() {
+    private func stopRecording() {
+        if isStreaming {
+            stopLiveRecording()
+        } else {
+            stopBatchRecording()
+        }
+    }
+
+    // MARK: - Live Transcription (Sherpa)
+
+    private func beginLiveRecording() {
+        guard let modelPath = model.modelPath else {
+            errorMessage = "No model path available."
+            return
+        }
+
+        // Validate model directory
+        let fm = FileManager.default
+        var isDir: ObjCBool = false
+        if !fm.fileExists(atPath: modelPath, isDirectory: &isDir) || !isDir.boolValue {
+            errorMessage = "Model directory missing. Please re-pair the model."
+            return
+        }
+
+        let modelURL = URL(fileURLWithPath: modelPath)
+        let runtime = model.runtime.lowercased()
+
+        guard let transcriber = LiveTranscriberFactory.shared.create(
+            engine: runtime, modelURL: modelURL
+        ) else {
+            // Fall back to batch if no live transcriber registered
+            beginBatchRecording()
+            return
+        }
+
+        do {
+            try transcriber.start()
+        } catch {
+            errorMessage = "Failed to start transcriber: \(error.localizedDescription)"
+            return
+        }
+
+        liveTranscriber = transcriber
+        transcriptionText = ""
+
+        let engine = AVAudioEngine()
+        let inputNode = engine.inputNode
+        let hwFormat = inputNode.outputFormat(forBus: 0)
+
+        // Target format: 16kHz mono Float32 for sherpa
+        guard let targetFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 16000,
+            channels: 1,
+            interleaved: false
+        ) else {
+            errorMessage = "Could not create target audio format."
+            return
+        }
+
+        let converter = AVAudioConverter(from: hwFormat, to: targetFormat)
+
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: hwFormat) { buffer, _ in
+            guard let converter else { return }
+
+            // Calculate output frame count for 16kHz
+            let ratio = 16000.0 / hwFormat.sampleRate
+            let outputFrameCount = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
+            guard let outputBuffer = AVAudioPCMBuffer(
+                pcmFormat: targetFormat,
+                frameCapacity: outputFrameCount
+            ) else { return }
+
+            var error: NSError?
+            converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+                outStatus.pointee = .haveData
+                return buffer
+            }
+
+            if error == nil, let channelData = outputBuffer.floatChannelData {
+                let count = Int(outputBuffer.frameLength)
+                let samples = Array(UnsafeBufferPointer(start: channelData[0], count: count))
+                transcriber.feedSamples(samples)
+            }
+        }
+
+        do {
+            try engine.start()
+        } catch {
+            errorMessage = "Failed to start audio engine: \(error.localizedDescription)"
+            return
+        }
+
+        audioEngine = engine
+        isRecording = true
+        statusMessage = "Listening..."
+
+        // Poll for partial results every 200ms
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+            let partial = transcriber.getPartialResult()
+            DispatchQueue.main.async {
+                let formatted = Self.formatTranscription(partial)
+                if !formatted.isEmpty {
+                    self.transcriptionText = formatted
+                }
+            }
+        }
+        pollingTimer = timer
+    }
+
+    private func stopLiveRecording() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
+
+        audioEngine?.inputNode.removeTap(onBus: 0)
+        audioEngine?.stop()
+        audioEngine = nil
+
+        let finalText = liveTranscriber?.stop() ?? ""
+        liveTranscriber = nil
+
+        let formatted = Self.formatTranscription(finalText)
+        transcriptionText = formatted.isEmpty ? "(No speech detected)" : formatted
+        isRecording = false
+        statusMessage = "Tap the microphone to record again."
+    }
+
+    private func tearDownLiveTranscription() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
+        audioEngine?.inputNode.removeTap(onBus: 0)
+        audioEngine?.stop()
+        audioEngine = nil
+        _ = liveTranscriber?.stop()
+        liveTranscriber = nil
+    }
+
+    // MARK: - Batch Recording (Whisper)
+
+    private func beginBatchRecording() {
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("wav")
@@ -159,15 +310,13 @@ struct TranscriptionScreen: View {
             recorder.record()
             audioRecorder = recorder
             isRecording = true
-            statusMessage = isStreaming
-                ? "Listening... Tap to stop."
-                : "Recording... Tap to stop."
+            statusMessage = "Recording... Tap to stop."
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
         }
     }
 
-    private func stopRecording() {
+    private func stopBatchRecording() {
         audioRecorder?.stop()
         audioRecorder = nil
         isRecording = false
@@ -178,28 +327,38 @@ struct TranscriptionScreen: View {
         }
 
         statusMessage = "Transcribing..."
-        transcribe(url: url)
+        transcribeBatch(url: url)
     }
 
-    private func transcribe(url: URL) {
+    private func transcribeBatch(url: URL) {
         isTranscribing = true
 
         Task {
             do {
+                if let modelPath = model.modelPath {
+                    let fm = FileManager.default
+                    var isDir: ObjCBool = false
+                    if !fm.fileExists(atPath: modelPath, isDirectory: &isDir) || !isDir.boolValue {
+                        throw NSError(domain: "Octomil", code: 0,
+                                      userInfo: [NSLocalizedDescriptionKey: "Model directory missing. Please re-pair the model."])
+                    }
+                }
+
                 let audioData = try Data(contentsOf: url)
 
-                // Try the API client first, fall back to local runtime registry
-                // (paired on-device models don't need a client/device token).
-                if let client = appState.client {
+                if let runtime = ModelRuntimeRegistry.shared.resolve(modelId: model.name) {
+                    let request = RuntimeRequest(prompt: "", mediaData: audioData, mediaType: "audio")
+                    let response = try await runtime.run(request: request)
+                    let cleanText = response.text
+                        .replacingOccurrences(of: "\0", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    await MainActor.run {
+                        transcriptionText = cleanText.isEmpty ? "(No speech detected)" : cleanText
+                    }
+                } else if let client = appState.client {
                     let result = try await client.audio.transcriptions.create(audio: audioData, model: model.name)
                     await MainActor.run {
                         transcriptionText = result.text
-                    }
-                } else if let runtime = ModelRuntimeRegistry.shared.resolve(modelId: model.name) {
-                    let request = RuntimeRequest(prompt: "", mediaData: audioData, mediaType: "audio")
-                    let response = try await runtime.run(request: request)
-                    await MainActor.run {
-                        transcriptionText = response.text
                     }
                 } else {
                     throw NSError(domain: "Octomil", code: 0,
@@ -219,5 +378,46 @@ struct TranscriptionScreen: View {
                 }
             }
         }
+    }
+
+    // MARK: - Grammar Formatting
+
+    /// Applies basic grammar formatting: capitalize sentences, add punctuation.
+    static func formatTranscription(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        // Normalize whitespace
+        let words = trimmed.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+        guard !words.isEmpty else { return "" }
+
+        var result = ""
+        var capitalizeNext = true
+
+        for word in words {
+            if !result.isEmpty {
+                result += " "
+            }
+
+            if capitalizeNext {
+                result += word.prefix(1).uppercased() + word.dropFirst()
+                capitalizeNext = false
+            } else {
+                result += word
+            }
+
+            // Check if word ends a sentence
+            if let last = word.last, last == "." || last == "!" || last == "?" {
+                capitalizeNext = true
+            }
+        }
+
+        // Add period at end if missing punctuation
+        if let last = result.last, !last.isPunctuation {
+            result += "."
+        }
+
+        return result
     }
 }

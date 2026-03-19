@@ -107,6 +107,11 @@ final class AppState: ObservableObject {
     private(set) var localPort: UInt16 = 0
 
     init() {
+        // Fix persisted server URLs that include /api/v1 from older deep links
+        if serverURL.hasSuffix("/api/v1") {
+            serverURL = String(serverURL.dropLast("/api/v1".count))
+        }
+
         if deviceName.isEmpty {
             #if canImport(UIKit)
             deviceName = UIDevice.current.name

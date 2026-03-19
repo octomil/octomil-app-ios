@@ -7,7 +7,7 @@ options:
 packages:
   Octomil:
     url: https://github.com/octomil/octomil-ios.git
-    revision: 028b62ca19a01ae1b667bd8280f57925d01248f2
+    revision: 0cac033
 
 targets:
   OctomilApp:
@@ -17,7 +17,7 @@ targets:
       - OctomilApp
     dependencies:
       - package: Octomil
-        product: Octomil
+        product: OctomilClient
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.octomil.app

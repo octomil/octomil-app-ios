@@ -25,8 +25,12 @@ struct PairScreen: View {
                             appState.showPairingSheet = false
                             appState.pendingPairingCode = nil
                             appState.selectedTab = .home
+                        },
+                        onDismiss: {
+                            appState.pendingPairingCode = nil
                         }
                     )
+                    .id(code)
                 } else {
                     VStack(spacing: 24) {
                         Spacer()

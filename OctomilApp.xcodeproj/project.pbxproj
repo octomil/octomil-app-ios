@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0204D132821CE448548EF15A /* Octomil in Frameworks */ = {isa = PBXBuildFile; productRef = 6B3AB72E7BC7B8D7E89C8B4C /* Octomil */; };
+		0204D132821CE448548EF15A /* OctomilClient in Frameworks */ = {isa = PBXBuildFile; productRef = 7090E2AB0F24D8AF109ED248 /* OctomilClient */; };
 		0D3FB7344DF00C6266BA3E86 /* OctomilAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E63A4141147E14858F4D29D /* OctomilAppApp.swift */; };
 		171F7D5B203B6E4F8BEE2355 /* PairScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */; };
 		1E6982A18899B8ED30603570 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */; };
@@ -45,7 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0204D132821CE448548EF15A /* Octomil in Frameworks */,
+				0204D132821CE448548EF15A /* OctomilClient in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,7 +130,7 @@
 			);
 			name = OctomilApp;
 			packageProductDependencies = (
-				6B3AB72E7BC7B8D7E89C8B4C /* Octomil */,
+				7090E2AB0F24D8AF109ED248 /* OctomilClient */,
 			);
 			productName = OctomilApp;
 			productReference = 40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */;
@@ -402,16 +402,16 @@
 			repositoryURL = "https://github.com/octomil/octomil-ios.git";
 			requirement = {
 				kind = revision;
-				revision = 028b62ca19a01ae1b667bd8280f57925d01248f2;
+				revision = 0cac033;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		6B3AB72E7BC7B8D7E89C8B4C /* Octomil */ = {
+		7090E2AB0F24D8AF109ED248 /* OctomilClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 321C74B26AAD168A049A1692 /* XCRemoteSwiftPackageReference "octomil-ios" */;
-			productName = Octomil;
+			productName = OctomilClient;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
