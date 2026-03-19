@@ -190,8 +190,9 @@ final class AppState: ObservableObject {
               isDir.boolValue else {
             return
         }
+        let engine = Engine(executor: model.runtime)
         ModelRuntimeRegistry.shared.register(family: model.name) { _ in
-            LocalFileModelRuntime(modelId: model.name, fileURL: url)
+            LocalFileModelRuntime(modelId: model.name, fileURL: url, engine: engine)
         }
     }
 
