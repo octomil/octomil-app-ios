@@ -88,7 +88,14 @@ final class AppState: ObservableObject {
 
     @AppStorage("octomil_device_token") var deviceToken: String = ""
     @AppStorage("octomil_org_id") var orgId: String = ""
-    @AppStorage("octomil_server_url") var serverURL: String = "https://api.octomil.com"
+    @AppStorage("octomil_server_url") var serverURL: String = "https://api.octomil.com" {
+        didSet {
+            // Strip /api/v1 suffix — APIClient appends its own path prefix
+            if serverURL.hasSuffix("/api/v1") {
+                serverURL = String(serverURL.dropLast("/api/v1".count))
+            }
+        }
+    }
     @AppStorage("octomil_device_name") var deviceName: String = ""
 
     private static let storedModelsKey = "octomil_stored_models"
@@ -167,8 +174,17 @@ final class AppState: ObservableObject {
 
     /// Register a ``LocalFileModelRuntime`` for a stored model so that
     /// ``ModelRuntimeRegistry.shared.resolve(modelId:)`` can find it.
+    /// Skips registration if the model directory no longer exists on disk
+    /// (e.g. after an app reinstall wiped Library/Caches/).
     private func registerRuntime(for model: StoredModel) {
         guard let url = model.compiledModelURL else { return }
+        // Verify the model directory actually exists before registering.
+        // The native sherpa-onnx engine crashes (not throws) on invalid paths.
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir),
+              isDir.boolValue else {
+            return
+        }
         ModelRuntimeRegistry.shared.register(family: model.name) { _ in
             LocalFileModelRuntime(modelId: model.name, fileURL: url)
         }
