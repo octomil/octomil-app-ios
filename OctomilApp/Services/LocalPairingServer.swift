@@ -8,6 +8,10 @@ import Network
 /// - `POST /pair` — receive a pairing code from the CLI
 /// - `GET /golden/status` — report current app state for test harness
 /// - `POST /golden/reset` — clear credentials and cached models
+/// - `POST /golden/test/all` — run all capability tests
+/// - `POST /golden/test/chat` — run chat test
+/// - `POST /golden/test/transcribe` — run transcription test
+/// - `POST /golden/test/predict` — run prediction test
 final class LocalPairingServer {
     typealias PairHandler = (_ code: String, _ host: String?, _ modelName: String?) -> Void
 
@@ -20,6 +24,11 @@ final class LocalPairingServer {
 
     /// Clears credentials, cached models, and resets the app to a fresh state.
     var resetHandler: (() -> Void)?
+
+    #if DEBUG
+    /// Capability test runner (debug only).
+    var testHandler: GoldenTestRunner?
+    #endif
 
     init(onPair: @escaping PairHandler) {
         self.handler = onPair
@@ -179,6 +188,10 @@ final class LocalPairingServer {
             handleGoldenStatus(connection: connection)
         } else if request.hasPrefix("POST /golden/reset") {
             handleGoldenReset(connection: connection)
+        #if DEBUG
+        } else if request.hasPrefix("POST /golden/test/") {
+            handleGoldenTest(connection: connection, request: request)
+        #endif
         } else {
             sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
         }
@@ -231,6 +244,101 @@ final class LocalPairingServer {
             sendResponse(connection: connection, status: "200 OK", body: "{\"status\":\"noop\"}")
         }
     }
+
+    // MARK: - Golden Test Routes
+
+    #if DEBUG
+    private func handleGoldenTest(connection: NWConnection, request: String) {
+        guard let runner = testHandler else {
+            sendResponse(connection: connection, status: "501 Not Implemented", body: "{\"error\":\"test handler not configured\"}")
+            return
+        }
+
+        // Parse the sub-route: /golden/test/<capability>
+        let prefix = "POST /golden/test/"
+        let afterPrefix = request.dropFirst(prefix.count)
+        let route = String(afterPrefix.prefix(while: { $0 != " " && $0 != "?" && $0 != "\r" && $0 != "\n" }))
+
+        // Parse optional JSON body
+        let body = parseJsonBody(from: request)
+
+        // Bridge async → sync: run the test and send result when done
+        Task {
+            let result: [String: Any]
+
+            switch route {
+            case "all":
+                result = await runner.runAll()
+
+            case "chat":
+                let model = resolveModel(body: body, capability: .chat)
+                guard let model else {
+                    sendJsonResponse(connection: connection, dict: ["error": "no chat model available"])
+                    return
+                }
+                let prompt = body?["prompt"] as? String ?? "What is 2+2? Answer in one word."
+                let maxTokens = body?["max_tokens"] as? Int ?? 32
+                result = await runner.runChat(model: model, prompt: prompt, maxTokens: maxTokens)
+
+            case "transcribe":
+                let model = resolveModel(body: body, capability: .transcription)
+                guard let model else {
+                    sendJsonResponse(connection: connection, dict: ["error": "no transcription model available"])
+                    return
+                }
+                let fixture = body?["fixture"] as? String ?? "hello"
+                let mode = body?["mode"] as? String ?? "live"
+                result = await runner.runTranscribe(model: model, fixture: fixture, mode: mode)
+
+            case "predict":
+                let model = resolveModel(body: body, capability: .keyboardPrediction)
+                guard let model else {
+                    sendJsonResponse(connection: connection, dict: ["error": "no prediction model available"])
+                    return
+                }
+                let prefix = body?["prefix"] as? String ?? "The weather today is"
+                let n = body?["n"] as? Int ?? 3
+                result = await runner.runPredict(model: model, prefix: prefix, n: n)
+
+            default:
+                sendResponse(connection: connection, status: "404 Not Found", body: "{\"error\":\"unknown test route: \(route)\"}")
+                return
+            }
+
+            sendJsonResponse(connection: connection, dict: result)
+        }
+    }
+
+    private func resolveModel(body: [String: Any]?, capability: ModelCapability) -> StoredModel? {
+        if let modelName = body?["model"] as? String {
+            // Explicit model name — find it
+            return testHandler?.getModels().first(where: { $0.name == modelName })
+        }
+        // Auto-resolve by capability
+        return testHandler?.getModels().first(where: { $0.capability == capability })
+    }
+
+    private func parseJsonBody(from request: String) -> [String: Any]? {
+        guard let bodyRange = request.range(of: "\r\n\r\n") ?? request.range(of: "\n\n") else {
+            return nil
+        }
+        let bodyString = String(request[bodyRange.upperBound...])
+        guard let bodyData = bodyString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] else {
+            return nil
+        }
+        return json
+    }
+
+    private func sendJsonResponse(connection: NWConnection, dict: [String: Any]) {
+        if let data = try? JSONSerialization.data(withJSONObject: dict),
+           let body = String(data: data, encoding: .utf8) {
+            sendResponse(connection: connection, status: "200 OK", body: body)
+        } else {
+            sendResponse(connection: connection, status: "500 Internal Server Error", body: "{\"error\":\"serialization\"}")
+        }
+    }
+    #endif
 
     // MARK: - Helpers
 

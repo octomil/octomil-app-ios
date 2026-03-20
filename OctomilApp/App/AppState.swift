@@ -347,6 +347,10 @@ final class AppState: ObservableObject {
                 self?.resetForGoldenPath()
             }
         }
+        server.testHandler = GoldenTestRunner(
+            models: { [weak self] in self?.storedModels ?? [] },
+            client: { [weak self] in self?.client }
+        )
         #endif
 
         await server.startAsync()

@@ -7,7 +7,7 @@ import OctomilClient
 /// Debug-only — invoked by `POST /golden/test/*` endpoints on the local pairing server.
 final class GoldenTestRunner: @unchecked Sendable {
 
-    private let getModels: () -> [StoredModel]
+    let getModels: () -> [StoredModel]
     private let getClient: () -> OctomilClient?
 
     init(models: @escaping () -> [StoredModel], client: @escaping () -> OctomilClient?) {
