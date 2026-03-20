@@ -67,26 +67,120 @@ final class LocalPairingServer {
         listener = nil
     }
 
+    /// Max body size accepted (2 MB). Prevents abuse on debug endpoints.
+    private static let maxBodySize = 2 * 1024 * 1024
+
     private func handleConnection(_ connection: NWConnection) {
         connection.start(queue: .global(qos: .userInitiated))
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-            guard let data, error == nil else {
+        let deadline = DispatchTime.now() + .seconds(5)
+        receiveFullRequest(connection: connection, accumulated: Data(), deadline: deadline) { [weak self] result in
+            switch result {
+            case .failure:
                 connection.cancel()
+            case .success(let requestData):
+                let request = String(data: requestData, encoding: .utf8) ?? ""
+                self?.dispatch(connection: connection, request: request, rawData: requestData)
+            }
+        }
+    }
+
+    /// Read the full HTTP request: headers + body (based on Content-Length).
+    /// Loops `connection.receive()` until the complete body is accumulated or deadline.
+    private func receiveFullRequest(
+        connection: NWConnection,
+        accumulated: Data,
+        deadline: DispatchTime,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+            guard let self else { completion(.failure(NSError(domain: "LocalServer", code: -1))); return }
+
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            guard let data else {
+                completion(.failure(NSError(domain: "LocalServer", code: -2)))
                 return
             }
 
-            let request = String(data: data, encoding: .utf8) ?? ""
+            var buffer = accumulated
+            buffer.append(data)
 
-            if request.hasPrefix("POST /pair") {
-                self?.handlePair(connection: connection, request: request)
-            } else if request.hasPrefix("GET /golden/status") {
-                self?.handleGoldenStatus(connection: connection)
-            } else if request.hasPrefix("POST /golden/reset") {
-                self?.handleGoldenReset(connection: connection)
-            } else {
-                self?.sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
-                // sendResponse handles connection.cancel() in its completion handler
+            // Check size limit
+            if buffer.count > Self.maxBodySize {
+                self.sendResponse(connection: connection, status: "413 Payload Too Large", body: "{\"error\":\"body too large\"}")
+                return
             }
+
+            // Try to find header/body boundary
+            let bufferStr = String(data: buffer, encoding: .utf8) ?? ""
+            let headerEnd: String.Index?
+            let separator: String
+            if let range = bufferStr.range(of: "\r\n\r\n") {
+                headerEnd = range.upperBound
+                separator = "\r\n\r\n"
+            } else if let range = bufferStr.range(of: "\n\n") {
+                headerEnd = range.upperBound
+                separator = "\n\n"
+            } else {
+                headerEnd = nil
+                separator = ""
+            }
+
+            guard let bodyStart = headerEnd else {
+                // Haven't received full headers yet — keep reading
+                if DispatchTime.now() < deadline {
+                    self.receiveFullRequest(connection: connection, accumulated: buffer, deadline: deadline, completion: completion)
+                } else {
+                    completion(.failure(NSError(domain: "LocalServer", code: -3, userInfo: [NSLocalizedDescriptionKey: "timeout waiting for headers"])))
+                }
+                return
+            }
+
+            // Parse Content-Length from headers
+            let headersStr = String(bufferStr[..<bufferStr.range(of: separator)!.lowerBound])
+            let contentLength = Self.parseContentLength(from: headersStr)
+
+            // Calculate how much body we have
+            let bodyStartOffset = bufferStr.distance(from: bufferStr.startIndex, to: bodyStart)
+            let bodyReceived = buffer.count - bodyStartOffset
+
+            if bodyReceived >= contentLength {
+                // Full request received
+                completion(.success(buffer))
+            } else if isComplete {
+                // Connection closed before full body — use what we have
+                completion(.success(buffer))
+            } else if DispatchTime.now() < deadline {
+                // Need more data
+                self.receiveFullRequest(connection: connection, accumulated: buffer, deadline: deadline, completion: completion)
+            } else {
+                completion(.failure(NSError(domain: "LocalServer", code: -4, userInfo: [NSLocalizedDescriptionKey: "timeout waiting for body"])))
+            }
+        }
+    }
+
+    private static func parseContentLength(from headers: String) -> Int {
+        for line in headers.components(separatedBy: .newlines) {
+            let lower = line.lowercased()
+            if lower.hasPrefix("content-length:") {
+                let value = line.dropFirst("content-length:".count).trimmingCharacters(in: .whitespaces)
+                return Int(value) ?? 0
+            }
+        }
+        return 0
+    }
+
+    private func dispatch(connection: NWConnection, request: String, rawData: Data) {
+        if request.hasPrefix("POST /pair") {
+            handlePair(connection: connection, request: request)
+        } else if request.hasPrefix("GET /golden/status") {
+            handleGoldenStatus(connection: connection)
+        } else if request.hasPrefix("POST /golden/reset") {
+            handleGoldenReset(connection: connection)
+        } else {
+            sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
         }
     }
 
