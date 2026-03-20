@@ -236,6 +236,92 @@ final class AppState: ObservableObject {
         UserDefaults.standard.set(data, forKey: Self.storedModelsKey)
     }
 
+    // MARK: - Auto-Recovery
+
+    /// Re-downloads models whose files are missing from disk.
+    ///
+    /// Calls the server's desired-state endpoint to get download URLs,
+    /// then fetches each missing model to the PairingManager storage path.
+    func recoverMissingModels() async {
+        let missing = storedModels.filter { !$0.isAvailableOnDisk }
+        guard !missing.isEmpty, !deviceToken.isEmpty, !orgId.isEmpty else { return }
+
+        // Fetch desired state from server
+        guard var urlComponents = URLComponents(string: serverURL) else { return }
+        urlComponents.path = "/api/v1/devices/\(orgId)/desired-state"
+        guard let url = urlComponents.url else { return }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(deviceToken)", forHTTPHeaderField: "Authorization")
+
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              let http = response as? HTTPURLResponse,
+              http.statusCode == 200 else { return }
+
+        struct DesiredState: Decodable {
+            struct Model: Decodable {
+                let modelId: String
+                let modelVersion: String
+                let downloadUrl: String
+                enum CodingKeys: String, CodingKey {
+                    case modelId = "model_id"
+                    case modelVersion = "model_version"
+                    case downloadUrl = "download_url"
+                }
+            }
+            let models: [Model]
+        }
+
+        guard let desired = try? JSONDecoder().decode(DesiredState.self, from: data) else { return }
+
+        let missingNames = Set(missing.map(\.name))
+        let fm = FileManager.default
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let modelsDir = appSupport.appendingPathComponent("ai.octomil.models", isDirectory: true)
+
+        for entry in desired.models where missingNames.contains(entry.modelId) {
+            guard let downloadURL = URL(string: entry.downloadUrl) else { continue }
+
+            // Download to PairingManager's expected path
+            let modelDir = modelsDir
+                .appendingPathComponent(entry.modelId, isDirectory: true)
+                .appendingPathComponent(entry.modelVersion, isDirectory: true)
+
+            guard let (fileData, dlResponse) = try? await URLSession.shared.data(from: downloadURL),
+                  let dlHttp = dlResponse as? HTTPURLResponse,
+                  dlHttp.statusCode == 200 else { continue }
+
+            do {
+                try fm.createDirectory(at: modelDir, withIntermediateDirectories: true)
+                let filePath = modelDir.appendingPathComponent("model.bin")
+                try fileData.write(to: filePath, options: .atomic)
+
+                // Update stored model path and re-register runtime
+                if let index = storedModels.firstIndex(where: { $0.name == entry.modelId }) {
+                    let old = storedModels[index]
+                    let updated = StoredModel(
+                        from: PairedModelInfo(
+                            name: old.name,
+                            version: old.version,
+                            sizeString: old.sizeString,
+                            runtime: old.runtime,
+                            tokensPerSecond: old.tokensPerSecond,
+                            compiledModelURL: modelDir,
+                            resourceBindings: old.resourceBindings ?? [:]
+                        ),
+                        capability: old.capability,
+                        supportsStreaming: old.supportsStreaming
+                    )
+                    storedModels[index] = updated
+                    registerRuntime(for: updated)
+                    persistStoredModels()
+                }
+            } catch {
+                // Silent — UI already shows warning
+            }
+        }
+    }
+
     // MARK: - Local Pairing Server
 
     func startLocalServer() {
@@ -251,10 +337,81 @@ final class AppState: ObservableObject {
                 self.selectedTab = .pair
             }
         }
+
+        #if DEBUG
+        server.statusProvider = { [weak self] in
+            self?.buildGoldenStatus() ?? LocalPairingServer.defaultStatusDict
+        }
+        server.resetHandler = { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.resetForGoldenPath()
+            }
+        }
+        #endif
+
         server.start()
         localServer = server
         localPort = server.port
     }
+
+    // MARK: - Golden Path Harness (debug only)
+
+    #if DEBUG
+    private func buildGoldenStatus() -> [String: Any] {
+        let paired = !deviceToken.isEmpty
+        let registered = client != nil
+        let onDisk = storedModels.contains { $0.isAvailableOnDisk }
+        let firstModel = storedModels.first
+
+        let phase: String
+        if !paired {
+            phase = "idle"
+        } else if storedModels.isEmpty {
+            phase = "pairing"
+        } else if !onDisk {
+            phase = "downloading"
+        } else {
+            phase = "active"
+        }
+
+        return [
+            "phase": phase,
+            "paired": paired,
+            "device_registered": registered,
+            "model_downloaded": onDisk,
+            "model_activated": onDisk && registered,
+            "active_model": firstModel?.name as Any? ?? NSNull(),
+            "active_version": firstModel?.version as Any? ?? NSNull(),
+            "model_count": storedModels.count,
+            "last_error": NSNull(),
+        ]
+    }
+
+    private func resetForGoldenPath() {
+        // Clear credentials
+        deviceToken = ""
+        orgId = ""
+        serverURL = "https://api.octomil.com"
+        client = nil
+
+        // Clear Keychain
+        KeychainHelper.delete(key: "device_token")
+        KeychainHelper.delete(key: "org_id")
+        KeychainHelper.delete(key: "server_url")
+
+        // Clear models
+        storedModels.removeAll()
+        pairedModels.removeAll()
+        persistStoredModels()
+
+        // Delete cached model files
+        let fm = FileManager.default
+        if let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            let modelsDir = appSupport.appendingPathComponent("ai.octomil.models", isDirectory: true)
+            try? fm.removeItem(at: modelsDir)
+        }
+    }
+    #endif
 
     // MARK: - mDNS Advertising
 
