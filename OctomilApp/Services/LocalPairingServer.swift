@@ -8,6 +8,10 @@ import Network
 /// - `POST /pair` — receive a pairing code from the CLI
 /// - `GET /golden/status` — report current app state for test harness
 /// - `POST /golden/reset` — clear credentials and cached models
+/// - `POST /golden/test/all` — run all capability tests
+/// - `POST /golden/test/chat` — run chat test
+/// - `POST /golden/test/transcribe` — run transcription test
+/// - `POST /golden/test/predict` — run prediction test
 final class LocalPairingServer {
     typealias PairHandler = (_ code: String, _ host: String?, _ modelName: String?) -> Void
 
@@ -21,11 +25,30 @@ final class LocalPairingServer {
     /// Clears credentials, cached models, and resets the app to a fresh state.
     var resetHandler: (() -> Void)?
 
+    #if DEBUG
+    /// Capability test runner (debug only).
+    var testHandler: GoldenTestRunner?
+    #endif
+
     init(onPair: @escaping PairHandler) {
         self.handler = onPair
     }
 
     func start() {
+        startListener()
+    }
+
+    /// Start and wait until the listener port is assigned (up to 2 s).
+    func startAsync() async {
+        startListener()
+        // Wait for the port to be assigned by the NWListener state handler
+        for _ in 0..<20 {
+            if port > 0 { return }
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100 ms
+        }
+    }
+
+    private func startListener() {
         do {
             let params = NWParameters.tcp
             listener = try NWListener(using: params, on: .any)
@@ -53,24 +76,124 @@ final class LocalPairingServer {
         listener = nil
     }
 
+    /// Max body size accepted (2 MB). Prevents abuse on debug endpoints.
+    private static let maxBodySize = 2 * 1024 * 1024
+
     private func handleConnection(_ connection: NWConnection) {
         connection.start(queue: .global(qos: .userInitiated))
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-            defer { connection.cancel() }
-
-            guard let data, error == nil else { return }
-
-            let request = String(data: data, encoding: .utf8) ?? ""
-
-            if request.hasPrefix("POST /pair") {
-                self?.handlePair(connection: connection, request: request)
-            } else if request.hasPrefix("GET /golden/status") {
-                self?.handleGoldenStatus(connection: connection)
-            } else if request.hasPrefix("POST /golden/reset") {
-                self?.handleGoldenReset(connection: connection)
-            } else {
-                self?.sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
+        let deadline = DispatchTime.now() + .seconds(5)
+        receiveFullRequest(connection: connection, accumulated: Data(), deadline: deadline) { [weak self] result in
+            switch result {
+            case .failure:
+                connection.cancel()
+            case .success(let requestData):
+                let request = String(data: requestData, encoding: .utf8) ?? ""
+                self?.dispatch(connection: connection, request: request, rawData: requestData)
             }
+        }
+    }
+
+    /// Read the full HTTP request: headers + body (based on Content-Length).
+    /// Loops `connection.receive()` until the complete body is accumulated or deadline.
+    private func receiveFullRequest(
+        connection: NWConnection,
+        accumulated: Data,
+        deadline: DispatchTime,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+            guard let self else { completion(.failure(NSError(domain: "LocalServer", code: -1))); return }
+
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            guard let data else {
+                completion(.failure(NSError(domain: "LocalServer", code: -2)))
+                return
+            }
+
+            var buffer = accumulated
+            buffer.append(data)
+
+            // Check size limit
+            if buffer.count > Self.maxBodySize {
+                self.sendResponse(connection: connection, status: "413 Payload Too Large", body: "{\"error\":\"body too large\"}")
+                return
+            }
+
+            // Try to find header/body boundary
+            let bufferStr = String(data: buffer, encoding: .utf8) ?? ""
+            let headerEnd: String.Index?
+            let separator: String
+            if let range = bufferStr.range(of: "\r\n\r\n") {
+                headerEnd = range.upperBound
+                separator = "\r\n\r\n"
+            } else if let range = bufferStr.range(of: "\n\n") {
+                headerEnd = range.upperBound
+                separator = "\n\n"
+            } else {
+                headerEnd = nil
+                separator = ""
+            }
+
+            guard let bodyStart = headerEnd else {
+                // Haven't received full headers yet — keep reading
+                if DispatchTime.now() < deadline {
+                    self.receiveFullRequest(connection: connection, accumulated: buffer, deadline: deadline, completion: completion)
+                } else {
+                    completion(.failure(NSError(domain: "LocalServer", code: -3, userInfo: [NSLocalizedDescriptionKey: "timeout waiting for headers"])))
+                }
+                return
+            }
+
+            // Parse Content-Length from headers
+            let headersStr = String(bufferStr[..<bufferStr.range(of: separator)!.lowerBound])
+            let contentLength = Self.parseContentLength(from: headersStr)
+
+            // Calculate how much body we have
+            let bodyStartOffset = bufferStr.distance(from: bufferStr.startIndex, to: bodyStart)
+            let bodyReceived = buffer.count - bodyStartOffset
+
+            if bodyReceived >= contentLength {
+                // Full request received
+                completion(.success(buffer))
+            } else if isComplete {
+                // Connection closed before full body — use what we have
+                completion(.success(buffer))
+            } else if DispatchTime.now() < deadline {
+                // Need more data
+                self.receiveFullRequest(connection: connection, accumulated: buffer, deadline: deadline, completion: completion)
+            } else {
+                completion(.failure(NSError(domain: "LocalServer", code: -4, userInfo: [NSLocalizedDescriptionKey: "timeout waiting for body"])))
+            }
+        }
+    }
+
+    private static func parseContentLength(from headers: String) -> Int {
+        for line in headers.components(separatedBy: .newlines) {
+            let lower = line.lowercased()
+            if lower.hasPrefix("content-length:") {
+                let value = line.dropFirst("content-length:".count).trimmingCharacters(in: .whitespaces)
+                return Int(value) ?? 0
+            }
+        }
+        return 0
+    }
+
+    private func dispatch(connection: NWConnection, request: String, rawData: Data) {
+        if request.hasPrefix("POST /pair") {
+            handlePair(connection: connection, request: request)
+        } else if request.hasPrefix("GET /golden/status") {
+            handleGoldenStatus(connection: connection)
+        } else if request.hasPrefix("POST /golden/reset") {
+            handleGoldenReset(connection: connection)
+        #if DEBUG
+        } else if request.hasPrefix("POST /golden/test/") {
+            handleGoldenTest(connection: connection, request: request)
+        #endif
+        } else {
+            sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
         }
     }
 
@@ -121,6 +244,101 @@ final class LocalPairingServer {
             sendResponse(connection: connection, status: "200 OK", body: "{\"status\":\"noop\"}")
         }
     }
+
+    // MARK: - Golden Test Routes
+
+    #if DEBUG
+    private func handleGoldenTest(connection: NWConnection, request: String) {
+        guard let runner = testHandler else {
+            sendResponse(connection: connection, status: "501 Not Implemented", body: "{\"error\":\"test handler not configured\"}")
+            return
+        }
+
+        // Parse the sub-route: /golden/test/<capability>
+        let prefix = "POST /golden/test/"
+        let afterPrefix = request.dropFirst(prefix.count)
+        let route = String(afterPrefix.prefix(while: { $0 != " " && $0 != "?" && $0 != "\r" && $0 != "\n" }))
+
+        // Parse optional JSON body
+        let body = parseJsonBody(from: request)
+
+        // Bridge async → sync: run the test and send result when done
+        Task {
+            let result: [String: Any]
+
+            switch route {
+            case "all":
+                result = await runner.runAll()
+
+            case "chat":
+                let model = resolveModel(body: body, capability: .chat)
+                guard let model else {
+                    sendJsonResponse(connection: connection, dict: ["error": "no chat model available"])
+                    return
+                }
+                let prompt = body?["prompt"] as? String ?? "What is 2+2? Answer in one word."
+                let maxTokens = body?["max_tokens"] as? Int ?? 32
+                result = await runner.runChat(model: model, prompt: prompt, maxTokens: maxTokens)
+
+            case "transcribe":
+                let model = resolveModel(body: body, capability: .transcription)
+                guard let model else {
+                    sendJsonResponse(connection: connection, dict: ["error": "no transcription model available"])
+                    return
+                }
+                let fixture = body?["fixture"] as? String ?? "hello"
+                let mode = body?["mode"] as? String ?? "live"
+                result = await runner.runTranscribe(model: model, fixture: fixture, mode: mode)
+
+            case "predict":
+                let model = resolveModel(body: body, capability: .keyboardPrediction)
+                guard let model else {
+                    sendJsonResponse(connection: connection, dict: ["error": "no prediction model available"])
+                    return
+                }
+                let prefix = body?["prefix"] as? String ?? "The weather today is"
+                let n = body?["n"] as? Int ?? 3
+                result = await runner.runPredict(model: model, prefix: prefix, n: n)
+
+            default:
+                sendResponse(connection: connection, status: "404 Not Found", body: "{\"error\":\"unknown test route: \(route)\"}")
+                return
+            }
+
+            sendJsonResponse(connection: connection, dict: result)
+        }
+    }
+
+    private func resolveModel(body: [String: Any]?, capability: ModelCapability) -> StoredModel? {
+        if let modelName = body?["model"] as? String {
+            // Explicit model name — find it
+            return testHandler?.getModels().first(where: { $0.name == modelName })
+        }
+        // Auto-resolve by capability
+        return testHandler?.getModels().first(where: { $0.capability == capability })
+    }
+
+    private func parseJsonBody(from request: String) -> [String: Any]? {
+        guard let bodyRange = request.range(of: "\r\n\r\n") ?? request.range(of: "\n\n") else {
+            return nil
+        }
+        let bodyString = String(request[bodyRange.upperBound...])
+        guard let bodyData = bodyString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] else {
+            return nil
+        }
+        return json
+    }
+
+    private func sendJsonResponse(connection: NWConnection, dict: [String: Any]) {
+        if let data = try? JSONSerialization.data(withJSONObject: dict),
+           let body = String(data: data, encoding: .utf8) {
+            sendResponse(connection: connection, status: "200 OK", body: body)
+        } else {
+            sendResponse(connection: connection, status: "500 Internal Server Error", body: "{\"error\":\"serialization\"}")
+        }
+    }
+    #endif
 
     // MARK: - Helpers
 
