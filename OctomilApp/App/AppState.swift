@@ -47,6 +47,14 @@ struct StoredModel: Codable, Identifiable {
         modelPath.map { URL(fileURLWithPath: $0) }
     }
 
+    /// Whether the model directory still exists on disk.
+    /// Returns `false` when iOS has purged `Library/Caches/` or the app was reinstalled.
+    var isAvailableOnDisk: Bool {
+        guard let path = modelPath else { return false }
+        var isDir: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue
+    }
+
     var capabilityLabel: String {
         switch capability {
         case .transcription: return "Transcription"
@@ -115,6 +123,19 @@ final class AppState: ObservableObject {
             serverURL = String(serverURL.dropLast("/api/v1".count))
         }
 
+        // Restore credentials from Keychain if UserDefaults were wiped (reinstall)
+        if deviceToken.isEmpty, let kcToken = KeychainHelper.read(key: "device_token") {
+            deviceToken = kcToken
+        }
+        if orgId.isEmpty, let kcOrg = KeychainHelper.read(key: "org_id") {
+            orgId = kcOrg
+        }
+        if serverURL == "https://api.octomil.com",
+           let kcURL = KeychainHelper.read(key: "server_url"),
+           kcURL != "https://api.octomil.com" {
+            serverURL = kcURL
+        }
+
         if deviceName.isEmpty {
             #if canImport(UIKit)
             deviceName = UIDevice.current.name
@@ -125,6 +146,15 @@ final class AppState: ObservableObject {
         loadStoredModels()
         if !deviceToken.isEmpty, !orgId.isEmpty {
             initializeClient()
+        }
+    }
+
+    /// Persist credentials to Keychain so they survive app reinstall.
+    func saveToKeychain() {
+        if !deviceToken.isEmpty { KeychainHelper.save(key: "device_token", value: deviceToken) }
+        if !orgId.isEmpty { KeychainHelper.save(key: "org_id", value: orgId) }
+        if serverURL != "https://api.octomil.com" {
+            KeychainHelper.save(key: "server_url", value: serverURL)
         }
     }
 
@@ -193,26 +223,12 @@ final class AppState: ObservableObject {
               isDir.boolValue else {
             return
         }
-        let engine = Engine(executor: model.runtime)
-
-        // Convert string-keyed resource bindings to typed ArtifactResourceKind → URL
-        var resolvedBindings: [ArtifactResourceKind: URL] = [:]
-        if let bindings = model.resourceBindings {
-            for (kindString, filename) in bindings {
-                if let kind = ArtifactResourceKind(rawValue: kindString) {
-                    resolvedBindings[kind] = url.appendingPathComponent(filename)
-                }
-            }
-        }
-
-        ModelRuntimeRegistry.shared.register(family: model.name) { _ in
-            LocalFileModelRuntime(
-                modelId: model.name,
-                fileURL: url,
-                resourceBindings: resolvedBindings,
-                engine: engine
-            )
-        }
+        ModelRuntimeRegistry.shared.registerModel(
+            name: model.name,
+            fileURL: url,
+            engine: Engine(executor: model.runtime),
+            resourceBindings: model.resourceBindings ?? [:]
+        )
     }
 
     private func persistStoredModels() {

@@ -70,9 +70,15 @@ struct HomeScreen: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(model.name)
                                             .font(.headline)
-                                        Text("v\(model.version) \u{00B7} \(model.sizeString)")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                        if model.isAvailableOnDisk {
+                                            Text("v\(model.version) \u{00B7} \(model.sizeString)")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        } else {
+                                            Label("Missing — re-pair to restore", systemImage: "exclamationmark.triangle.fill")
+                                                .font(.caption)
+                                                .foregroundStyle(.orange)
+                                        }
                                     }
 
                                     Spacer()
@@ -86,6 +92,7 @@ struct HomeScreen: View {
                                         .clipShape(Capsule())
                                 }
                             }
+                            .disabled(!model.isAvailableOnDisk)
                         }
                         .onDelete { indexSet in
                             if let index = indexSet.first {

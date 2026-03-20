@@ -1,8 +1,8 @@
 import SwiftUI
-import OctomilClient
+import Octomil
 
 @main
-struct OctomilAppApp: App {
+struct CompanionApp: App {
     @StateObject private var appState = AppState()
 
     init() {

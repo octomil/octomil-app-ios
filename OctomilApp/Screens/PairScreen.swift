@@ -28,6 +28,7 @@ struct PairScreen: View {
                                 appState.deviceToken = token
                                 appState.orgId = org
                                 appState.initializeClient()
+                                appState.saveToKeychain()
                             }
                             appState.showPairingSheet = false
                             appState.pendingPairingCode = nil
