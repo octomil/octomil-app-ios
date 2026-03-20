@@ -26,6 +26,20 @@ final class LocalPairingServer {
     }
 
     func start() {
+        startListener()
+    }
+
+    /// Start and wait until the listener port is assigned (up to 2 s).
+    func startAsync() async {
+        startListener()
+        // Wait for the port to be assigned by the NWListener state handler
+        for _ in 0..<20 {
+            if port > 0 { return }
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100 ms
+        }
+    }
+
+    private func startListener() {
         do {
             let params = NWParameters.tcp
             listener = try NWListener(using: params, on: .any)
@@ -56,9 +70,10 @@ final class LocalPairingServer {
     private func handleConnection(_ connection: NWConnection) {
         connection.start(queue: .global(qos: .userInitiated))
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-            defer { connection.cancel() }
-
-            guard let data, error == nil else { return }
+            guard let data, error == nil else {
+                connection.cancel()
+                return
+            }
 
             let request = String(data: data, encoding: .utf8) ?? ""
 
@@ -70,6 +85,7 @@ final class LocalPairingServer {
                 self?.handleGoldenReset(connection: connection)
             } else {
                 self?.sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
+                // sendResponse handles connection.cancel() in its completion handler
             }
         }
     }

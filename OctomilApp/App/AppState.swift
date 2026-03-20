@@ -324,7 +324,7 @@ final class AppState: ObservableObject {
 
     // MARK: - Local Pairing Server
 
-    func startLocalServer() {
+    func startLocalServer() async {
         let server = LocalPairingServer { [weak self] code, host, modelName in
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -349,7 +349,7 @@ final class AppState: ObservableObject {
         }
         #endif
 
-        server.start()
+        await server.startAsync()
         localServer = server
         localPort = server.port
     }

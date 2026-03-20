@@ -40,8 +40,9 @@ struct CompanionApp: App {
                 handleDeepLink(url)
             }
             .task {
-                appState.startLocalServer()
+                await appState.startLocalServer()
                 appState.startAdvertising()
+                await appState.recoverMissingModels()
             }
         }
     }
