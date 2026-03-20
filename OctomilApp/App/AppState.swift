@@ -71,18 +71,19 @@ struct StoredModel: Codable, Identifiable {
         }
     }
 
-    /// Infer capability from the model's runtime/executor.
-    static func inferCapability(from runtime: String) -> (ModelCapability, Bool) {
-        switch runtime.lowercased() {
-        case "sherpa", "sherpa-onnx":
-            return (.transcription, true)
-        case "whisper", "whisper.cpp":
-            return (.transcription, false)
-        case "mlx", "llama.cpp", "llamacpp":
-            return (.chat, true)
-        default:
-            return (.chat, true)
+    /// Map server-provided modalities to capability.
+    static func inferCapability(
+        from runtime: String,
+        modalities: [String]? = nil
+    ) -> (ModelCapability, Bool) {
+        let rt = runtime.lowercased()
+        let set = Set(modalities?.map { $0.lowercased() } ?? [])
+
+        if set.contains("audio") || set.contains("speech") || set.contains("voice") {
+            let streaming = (rt == "sherpa" || rt == "sherpa-onnx")
+            return (.transcription, streaming)
         }
+        return (.chat, true)
     }
 }
 

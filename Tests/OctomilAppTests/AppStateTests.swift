@@ -206,8 +206,8 @@ struct AppStateTests {
         #expect(state.pairedModels.count == 3)
     }
 
-    @Test("Preserves modality when adding model")
-    func addPairedModelWithModality() {
+    @Test("Preserves modalities when adding model")
+    func addPairedModelWithModalities() {
         let state = AppState()
         let model = PairedModelInfo(
             name: "clip-vit",
@@ -215,12 +215,12 @@ struct AppStateTests {
             sizeString: "300 MB",
             runtime: "CoreML",
             tokensPerSecond: nil,
-            modality: "vision"
+            modalities: ["text", "image"]
         )
 
         state.addPairedModel(model)
 
-        #expect(state.pairedModels.first?.modality == "vision")
+        #expect(state.pairedModels.first?.modalities == ["text", "image"])
     }
 
     // MARK: - register guard

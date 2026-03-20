@@ -14,7 +14,7 @@ struct PairScreen: View {
                         token: code,
                         host: appState.serverURL,
                         onTryModel: { modelInfo in
-                            let (capability, streaming) = StoredModel.inferCapability(from: modelInfo.runtime)
+                            let (capability, streaming) = StoredModel.inferCapability(from: modelInfo.runtime, modalities: modelInfo.modalities)
                             let stored = StoredModel(
                                 from: modelInfo,
                                 capability: capability,
