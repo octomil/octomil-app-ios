@@ -2,12 +2,20 @@ import SwiftUI
 import AVFoundation
 import Octomil
 
+/// A single transcription entry in the chat history.
+private struct TranscriptionMessage: Identifiable {
+    let id = UUID()
+    let text: String
+    let timestamp: Date
+}
+
 struct TranscriptionScreen: View {
     @EnvironmentObject private var appState: AppState
     let model: StoredModel
 
     @State private var isRecording = false
-    @State private var transcriptionText = ""
+    @State private var messages: [TranscriptionMessage] = []
+    @State private var liveText = ""
     @State private var statusMessage = ""
     @State private var errorMessage: String?
     @State private var isTranscribing = false
@@ -25,36 +33,56 @@ struct TranscriptionScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    if transcriptionText.isEmpty && !isRecording && !isTranscribing {
-                        emptyState
-                    }
-
-                    if !transcriptionText.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Transcription")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(transcriptionText)
-                                .font(.body)
-                                .textSelection(.enabled)
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(.systemGray6))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        if messages.isEmpty && liveText.isEmpty && !isRecording && !isTranscribing {
+                            emptyState
                         }
-                        .padding(.horizontal, 16)
-                    }
 
-                    if let error = errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                        ForEach(messages) { msg in
+                            messageBubble(msg.text, timestamp: msg.timestamp)
+                                .id(msg.id)
+                        }
+
+                        if !liveText.isEmpty {
+                            messageBubble(liveText, timestamp: nil, isPartial: true)
+                                .id("live")
+                        }
+
+                        if isTranscribing {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Transcribing...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                             .padding(.horizontal, 16)
+                            .id("transcribing")
+                        }
+
+                        if let error = errorMessage {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                }
+                .onChange(of: messages.count) { _ in
+                    withAnimation {
+                        if let last = messages.last {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
                     }
                 }
-                .padding(.vertical, 16)
+                .onChange(of: liveText) { _ in
+                    withAnimation {
+                        proxy.scrollTo("live", anchor: .bottom)
+                    }
+                }
             }
 
             Divider()
@@ -101,6 +129,28 @@ struct TranscriptionScreen: View {
             audioRecorder?.stop()
             isRecording = false
         }
+    }
+
+    // MARK: - Subviews
+
+    private func messageBubble(_ text: String, timestamp: Date?, isPartial: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(text)
+                .font(.body)
+                .textSelection(.enabled)
+                .opacity(isPartial ? 0.7 : 1.0)
+
+            if let timestamp {
+                Text(timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 16)
     }
 
     private var emptyState: some View {
@@ -194,7 +244,7 @@ struct TranscriptionScreen: View {
         }
 
         liveTranscriber = transcriber
-        transcriptionText = ""
+        liveText = ""
 
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
@@ -254,7 +304,7 @@ struct TranscriptionScreen: View {
             DispatchQueue.main.async {
                 let formatted = Self.formatTranscription(partial)
                 if !formatted.isEmpty {
-                    self.transcriptionText = formatted
+                    self.liveText = formatted
                 }
             }
         }
@@ -273,7 +323,10 @@ struct TranscriptionScreen: View {
         liveTranscriber = nil
 
         let formatted = Self.formatTranscription(finalText)
-        transcriptionText = formatted.isEmpty ? "(No speech detected)" : formatted
+        liveText = ""
+        if !formatted.isEmpty {
+            messages.append(TranscriptionMessage(text: formatted, timestamp: Date()))
+        }
         isRecording = false
         statusMessage = "Tap the microphone to record again."
     }
@@ -347,19 +400,20 @@ struct TranscriptionScreen: View {
                 let audioData = try Data(contentsOf: url)
 
                 if let runtime = ModelRuntimeRegistry.shared.resolve(modelId: model.name) {
-                    let message = RuntimeMessage(role: .user, parts: [.audio(data: audioData, mediaType: "audio/wav")])
-                    let request = RuntimeRequest(messages: [message])
+                    let msg = RuntimeMessage(role: .user, parts: [.audio(data: audioData, mediaType: "audio/wav")])
+                    let request = RuntimeRequest(messages: [msg])
                     let response = try await runtime.run(request: request)
                     let cleanText = response.text
                         .replacingOccurrences(of: "\0", with: "")
                         .trimmingCharacters(in: .whitespacesAndNewlines)
                     await MainActor.run {
-                        transcriptionText = cleanText.isEmpty ? "(No speech detected)" : cleanText
+                        let text = cleanText.isEmpty ? "(No speech detected)" : cleanText
+                        messages.append(TranscriptionMessage(text: text, timestamp: Date()))
                     }
                 } else if let client = appState.client {
                     let result = try await client.audio.transcriptions.create(audio: audioData, model: model.name)
                     await MainActor.run {
-                        transcriptionText = result.text
+                        messages.append(TranscriptionMessage(text: result.text, timestamp: Date()))
                     }
                 } else {
                     throw NSError(domain: "Octomil", code: 0,
