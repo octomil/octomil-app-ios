@@ -42,7 +42,7 @@ struct CompanionApp: App {
             .task {
                 await appState.startLocalServer()
                 appState.startAdvertising()
-                await appState.recoverMissingModels()
+                await appState.recoverAndSyncModels()
             }
         }
     }

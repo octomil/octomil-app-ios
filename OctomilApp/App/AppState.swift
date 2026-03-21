@@ -239,88 +239,57 @@ final class AppState: ObservableObject {
 
     // MARK: - Auto-Recovery
 
-    /// Re-downloads models whose files are missing from disk.
+    /// Triggers SDK reconciliation to recover missing model files, then
+    /// syncs local storedModels with the SDK's metadata store.
     ///
-    /// Calls the server's desired-state endpoint to get download URLs,
-    /// then fetches each missing model to the PairingManager storage path.
-    func recoverMissingModels() async {
-        let missing = storedModels.filter { !$0.isAvailableOnDisk }
-        guard !missing.isEmpty, !deviceToken.isEmpty, !orgId.isEmpty else { return }
+    /// The SDK's ``ArtifactReconciler`` handles downloading via the server's
+    /// desired-state endpoint and multi-file artifact support. This method
+    /// just bridges the SDK's record paths back into the app's StoredModel list.
+    func recoverAndSyncModels() async {
+        guard let client else { return }
 
-        // Fetch desired state from server
-        guard var urlComponents = URLComponents(string: serverURL) else { return }
-        urlComponents.path = "/api/v1/devices/\(orgId)/desired-state"
-        guard let url = urlComponents.url else { return }
+        // 1. Let the SDK reconciler download any missing artifacts
+        try? await client.recoverModels()
 
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(deviceToken)", forHTTPHeaderField: "Authorization")
+        // 2. Sync storedModel paths from SDK metadata
+        syncModelPathsFromSDK()
+    }
 
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              let http = response as? HTTPURLResponse,
-              http.statusCode == 200 else { return }
+    /// Updates storedModels file paths from the SDK's installed model metadata.
+    ///
+    /// After the SDK reconciler recovers models (possibly to a different directory
+    /// than the original pairing path), this method updates the app's StoredModel
+    /// entries to point at the SDK's artifact directory and re-registers runtimes.
+    func syncModelPathsFromSDK() {
+        guard let client else { return }
+        let sdkRecords = client.installedModels()
 
-        struct DesiredState: Decodable {
-            struct Model: Decodable {
-                let modelId: String
-                let modelVersion: String
-                let downloadUrl: String
-                enum CodingKeys: String, CodingKey {
-                    case modelId = "model_id"
-                    case modelVersion = "model_version"
-                    case downloadUrl = "download_url"
-                }
-            }
-            let models: [Model]
-        }
+        var changed = false
+        for (index, stored) in storedModels.enumerated() {
+            guard let record = sdkRecords.first(where: { $0.modelId == stored.name }) else { continue }
 
-        guard let desired = try? JSONDecoder().decode(DesiredState.self, from: data) else { return }
-
-        let missingNames = Set(missing.map(\.name))
-        let fm = FileManager.default
-        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let modelsDir = appSupport.appendingPathComponent("ai.octomil.models", isDirectory: true)
-
-        for entry in desired.models where missingNames.contains(entry.modelId) {
-            guard let downloadURL = URL(string: entry.downloadUrl) else { continue }
-
-            // Download to PairingManager's expected path
-            let modelDir = modelsDir
-                .appendingPathComponent(entry.modelId, isDirectory: true)
-                .appendingPathComponent(entry.modelVersion, isDirectory: true)
-
-            guard let (fileData, dlResponse) = try? await URLSession.shared.data(from: downloadURL),
-                  let dlHttp = dlResponse as? HTTPURLResponse,
-                  dlHttp.statusCode == 200 else { continue }
-
-            do {
-                try fm.createDirectory(at: modelDir, withIntermediateDirectories: true)
-                let filePath = modelDir.appendingPathComponent("model.bin")
-                try fileData.write(to: filePath, options: .atomic)
-
-                // Update stored model path and re-register runtime
-                if let index = storedModels.firstIndex(where: { $0.name == entry.modelId }) {
-                    let old = storedModels[index]
-                    let updated = StoredModel(
-                        from: PairedModelInfo(
-                            name: old.name,
-                            version: old.version,
-                            sizeString: old.sizeString,
-                            runtime: old.runtime,
-                            tokensPerSecond: old.tokensPerSecond,
-                            compiledModelURL: modelDir,
-                            resourceBindings: old.resourceBindings ?? [:]
-                        ),
-                        capability: old.capability,
-                        supportsStreaming: old.supportsStreaming
-                    )
-                    storedModels[index] = updated
-                    registerRuntime(for: updated)
-                    persistStoredModels()
-                }
-            } catch {
-                // Silent — UI already shows warning
+            // Update path if SDK recovered to a different location, or if file was missing
+            let sdkPath = record.filePath
+            if stored.modelPath != sdkPath || !stored.isAvailableOnDisk {
+                let updated = StoredModel(
+                    from: PairedModelInfo(
+                        name: stored.name,
+                        version: stored.version,
+                        sizeString: stored.sizeString,
+                        runtime: stored.runtime,
+                        tokensPerSecond: stored.tokensPerSecond,
+                        compiledModelURL: URL(fileURLWithPath: sdkPath),
+                        resourceBindings: record.resourceBindings ?? stored.resourceBindings ?? [:]
+                    ),
+                    capability: stored.capability,
+                    supportsStreaming: stored.supportsStreaming
+                )
+                storedModels[index] = updated
+                registerRuntime(for: updated)
+                changed = true
             }
         }
+        if changed { persistStoredModels() }
     }
 
     // MARK: - Local Pairing Server
