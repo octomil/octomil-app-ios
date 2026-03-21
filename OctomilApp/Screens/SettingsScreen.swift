@@ -5,20 +5,24 @@ struct SettingsScreen: View {
     @EnvironmentObject private var appState: AppState
     @State private var showClearCacheAlert = false
     @State private var statusMessage: String?
+    @State private var showToken = false
+    @State private var showOrgId = false
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("API Configuration") {
-                    TextField("Device Token", text: $appState.deviceToken)
-                        .textContentType(.none)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
+                    MaskedField(
+                        label: "Device Token",
+                        text: $appState.deviceToken,
+                        isRevealed: $showToken
+                    )
 
-                    TextField("Organization ID", text: $appState.orgId)
-                        .textContentType(.organizationName)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
+                    MaskedField(
+                        label: "Organization ID",
+                        text: $appState.orgId,
+                        isRevealed: $showOrgId
+                    )
 
                     TextField("Server URL", text: $appState.serverURL)
                         .textContentType(.URL)
@@ -94,5 +98,48 @@ struct SettingsScreen: View {
                 statusMessage = "Failed: \(error.localizedDescription)"
             }
         }
+    }
+}
+
+// MARK: - Masked Field
+
+private struct MaskedField: View {
+    let label: String
+    @Binding var text: String
+    @Binding var isRevealed: Bool
+
+    var body: some View {
+        HStack {
+            if text.isEmpty {
+                Text(label)
+                    .foregroundStyle(.tertiary)
+                Spacer()
+            } else if isRevealed {
+                TextField(label, text: $text)
+                    .textContentType(.none)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+            } else {
+                Text(maskedValue)
+                    .foregroundStyle(.primary)
+                    .font(.body.monospaced())
+                Spacer()
+            }
+
+            if !text.isEmpty {
+                Button {
+                    isRevealed.toggle()
+                } label: {
+                    Image(systemName: isRevealed ? "eye.slash" : "eye")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var maskedValue: String {
+        let suffix = String(text.suffix(4))
+        return "\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}" + suffix
     }
 }
