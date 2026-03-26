@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 import Octomil
 
@@ -11,6 +12,8 @@ struct ChatScreen: View {
     @State private var isGenerating = false
     @State private var errorMessage: String?
     @State private var generationTask: Task<Void, Never>?
+    @State private var selectedImageData: Data?
+    @State private var photoSelection: PhotosPickerItem?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -65,7 +68,33 @@ struct ChatScreen: View {
                     .padding(.top, 4)
             }
 
+            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                HStack {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 80)
+                        .cornerRadius(8)
+                    Button {
+                        selectedImageData = nil
+                        photoSelection = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+            }
+
             HStack(spacing: 8) {
+                PhotosPicker(selection: $photoSelection, matching: .images) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                }
+                .disabled(isGenerating)
+
                 TextField("Message", text: $inputText, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...4)
@@ -86,13 +115,20 @@ struct ChatScreen: View {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
                     }
-                    .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedImageData == nil)
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
         .navigationTitle(model.name)
+        .onChange(of: photoSelection) { newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    selectedImageData = data
+                }
+            }
+        }
         .onDisappear {
             cancelGeneration()
         }
@@ -117,7 +153,7 @@ struct ChatScreen: View {
 
     private func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty || selectedImageData != nil else { return }
         guard let client = appState.client else {
             errorMessage = "No client configured. Set device token in Settings."
             return
@@ -126,7 +162,14 @@ struct ChatScreen: View {
         inputText = ""
         errorMessage = nil
 
-        messages.append(.user(text))
+        if let imageData = selectedImageData {
+            let compressed = Self.compressImage(imageData, maxDimension: 1024, quality: 0.8)
+            messages.append(.user(text.isEmpty ? "What's in this image?" : text, imageData: compressed))
+            selectedImageData = nil
+            photoSelection = nil
+        } else {
+            messages.append(.user(text))
+        }
 
         isGenerating = true
         streamingText = ""
@@ -138,7 +181,8 @@ struct ChatScreen: View {
 
         generationTask = Task {
             do {
-                for try await chunk in chat.stream(text) {
+                let request = ChatRequest(messages: messages)
+                for try await chunk in chat.stream(request) {
                     if let content = chunk.choices.first?.delta.content {
                         await MainActor.run {
                             streamingText += content
@@ -177,6 +221,15 @@ struct ChatScreen: View {
         generationTask?.cancel()
         generationTask = nil
     }
+
+    private static func compressImage(_ data: Data, maxDimension: CGFloat = 1024, quality: CGFloat = 0.8) -> Data {
+        guard let image = UIImage(data: data) else { return data }
+        let scale = min(1.0, maxDimension / max(image.size.width, image.size.height))
+        let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let resized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: newSize)) }
+        return resized.jpegData(compressionQuality: quality) ?? data
+    }
 }
 
 // MARK: - Chat Bubble
@@ -188,12 +241,38 @@ private struct ChatBubble: View {
         HStack {
             if message.role == .user { Spacer(minLength: 48) }
 
-            Text(message.content ?? "")
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(backgroundColor)
-                .foregroundStyle(foregroundColor)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+            VStack(alignment: .leading, spacing: 4) {
+                if let parts = message.parts {
+                    ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                        switch part {
+                        case .image(let data, _, _, _):
+                            if let data, let decoded = Data(base64Encoded: data),
+                               let uiImage = UIImage(data: decoded) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxHeight: 200)
+                                    .cornerRadius(8)
+                            }
+                        case .text(let text):
+                            if !text.isEmpty {
+                                Text(text)
+                                    .textSelection(.enabled)
+                            }
+                        default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    Text(message.content ?? "")
+                        .textSelection(.enabled)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(backgroundColor)
+            .foregroundStyle(foregroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
 
             if message.role != .user { Spacer(minLength: 48) }
         }
