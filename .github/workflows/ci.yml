@@ -21,6 +21,7 @@ env:
 
 jobs:
   build:
+    timeout-minutes: 25
     name: Build & Test
     runs-on: macos-15
     steps:
@@ -71,6 +72,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
   publish-testflight:
+    timeout-minutes: 25
     name: Publish to TestFlight
     runs-on: macos-15
     needs: build
