@@ -49,7 +49,7 @@ enum AppProfile: String, CaseIterable {
 
     /// Case-insensitive lookup with `prod`/`stg` aliases.
     static func from(_ raw: String) -> AppProfile? {
-        let normalized = raw.trimmingCharacters(in: .whitespaces).lowercased()
+        let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let aliases: [String: String] = [
             "prod": "production",
             "stg": "staging",
@@ -77,7 +77,7 @@ enum AppProfileResolver {
     static func resolveDefault(environment: [String: String]? = nil) -> AppProfile {
         let env = environment ?? ProcessInfo.processInfo.environment
 
-        let rawEnv = (env["OCTOMIL_PROFILE"] ?? "").trimmingCharacters(in: .whitespaces)
+        let rawEnv = (env["OCTOMIL_PROFILE"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !rawEnv.isEmpty, let p = AppProfile.from(rawEnv) {
             return p
         }
@@ -85,9 +85,9 @@ enum AppProfileResolver {
         // Trim BEFORE selecting so a whitespace OCTOMIL_API_BASE
         // doesn't mask a valid OCTOMIL_API_URL (codex post-debate N1).
         let baseTrimmed = (env["OCTOMIL_API_BASE"] ?? "")
-            .trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         let urlTrimmed = (env["OCTOMIL_API_URL"] ?? "")
-            .trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         let url = baseTrimmed.isEmpty ? urlTrimmed : baseTrimmed
         if let p = inferFromURL(url) {
             return p
@@ -96,15 +96,18 @@ enum AppProfileResolver {
         return .production
     }
 
-    /// Convenience: the profile-aware default URL string for use as
-    /// the `@AppStorage("octomil_server_url")` initial value when the
-    /// user hasn't set one yet.
+    /// Convenience: the profile-aware default URL string. Used at
+    /// runtime by ``AppState.init()`` to flip the persisted
+    /// ``serverURL`` from prod → staging when the user hasn't pinned
+    /// a custom URL yet. (`@AppStorage` requires a literal default
+    /// at compile time, so the runtime-init path is the only place
+    /// this value can be applied.)
     static func defaultServerURLString(environment: [String: String]? = nil) -> String {
         resolveDefault(environment: environment).defaultHostURL.absoluteString
     }
 
     private static func inferFromURL(_ raw: String) -> AppProfile? {
-        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         // Use URLComponents to parse; substring matching the raw URL
         // would let evil.test/?next=api.staging.octomil.com or
