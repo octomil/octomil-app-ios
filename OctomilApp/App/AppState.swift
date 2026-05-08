@@ -137,6 +137,19 @@ final class AppState: ObservableObject {
             serverURL = kcURL
         }
 
+        // Profile-aware first-run override: if the user hasn't pinned
+        // a non-default server URL anywhere yet AND OCTOMIL_PROFILE
+        // (or a known OCTOMIL_API_BASE) names a non-prod env, flip
+        // the default. Once the user persists a custom URL via
+        // Settings this branch never fires again. Codex post-debate
+        // B1 wiring for app-ios.
+        if serverURL == "https://api.octomil.com" {
+            let profileURL = AppProfileResolver.defaultServerURLString()
+            if profileURL != "https://api.octomil.com" {
+                serverURL = profileURL
+            }
+        }
+
         if deviceName.isEmpty {
             #if canImport(UIKit)
             deviceName = UIDevice.current.name

@@ -82,9 +82,13 @@ enum AppProfileResolver {
             return p
         }
 
-        let url = (env["OCTOMIL_API_BASE"] ?? "").isEmpty
-            ? (env["OCTOMIL_API_URL"] ?? "")
-            : (env["OCTOMIL_API_BASE"] ?? "")
+        // Trim BEFORE selecting so a whitespace OCTOMIL_API_BASE
+        // doesn't mask a valid OCTOMIL_API_URL (codex post-debate N1).
+        let baseTrimmed = (env["OCTOMIL_API_BASE"] ?? "")
+            .trimmingCharacters(in: .whitespaces)
+        let urlTrimmed = (env["OCTOMIL_API_URL"] ?? "")
+            .trimmingCharacters(in: .whitespaces)
+        let url = baseTrimmed.isEmpty ? urlTrimmed : baseTrimmed
         if let p = inferFromURL(url) {
             return p
         }
@@ -100,18 +104,27 @@ enum AppProfileResolver {
     }
 
     private static func inferFromURL(_ raw: String) -> AppProfile? {
-        guard !raw.isEmpty else { return nil }
-        let lowered = raw.trimmingCharacters(in: .whitespaces).lowercased()
-        // Order matters: staging is more specific than production.
-        let markers: [(AppProfile, [String])] = [
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        // Use URLComponents to parse; substring matching the raw URL
+        // would let evil.test/?next=api.staging.octomil.com or
+        // api.octomil.com.evil.test spoof a profile and route the
+        // app's first-run URL to the wrong env (codex post-debate B1).
+        guard
+            let components = URLComponents(string: trimmed),
+            let host = components.host?.lowercased(),
+            !host.isEmpty
+        else {
+            return nil
+        }
+        // Exact-host markers — staging FIRST (more specific).
+        let markers: [(AppProfile, Set<String>)] = [
             (.staging, ["api.staging.octomil.com"]),
             (.production, ["api.octomil.com"]),
             (.dev, ["localhost", "127.0.0.1", "0.0.0.0"]),
         ]
-        for (profile, ms) in markers {
-            for m in ms where lowered.contains(m) {
-                return profile
-            }
+        for (profile, ms) in markers where ms.contains(host) {
+            return profile
         }
         return nil
     }
