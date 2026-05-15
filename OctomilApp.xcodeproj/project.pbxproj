@@ -12,13 +12,19 @@
 		171F7D5B203B6E4F8BEE2355 /* PairScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */; };
 		1E6982A18899B8ED30603570 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */; };
 		2B0A6A91DE1D600530332EAE /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C282159C16328D248F7FC20 /* AppState.swift */; };
+		34D83979D72B74C582FFA77F /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B569D8F9B7B91BC16054BBEC /* KeychainHelper.swift */; };
 		4386FFBC90B27586E926EEF2 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 749907724BE46978D119E6FC /* SettingsScreen.swift */; };
 		55D06F2AB37B91366D656250 /* ModelDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */; };
+		6C2811D555F10EC20D74CDA0 /* GoldenTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9C83248BACA8D9E70E87DB /* GoldenTestRunner.swift */; };
 		9647DD8A661B95103F849EE6 /* ChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */; };
 		992EC351422E57C126C99AA9 /* LocalPairingServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */; };
+		9EF87482D0292C6EE47AE88A /* CameraSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB786B291CDDA2D0BAB3B9C /* CameraSession.swift */; };
+		A8E49C65D796A95A38E5423E /* hello_16khz.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7AF23E075699395657C25673 /* hello_16khz.wav */; };
+		CF9B55A868FFB553E8FBA1CF /* ObjectDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1974D1C9819AEC72A47F04 /* ObjectDetector.swift */; };
 		CFDD6E6111A3844AB4E8F92E /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F94D3E05A116232C121770 /* DeepLinkHandler.swift */; };
 		D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10129DD329B19C97CC1E54E /* PredictionScreen.swift */; };
 		D69BDA17530EB11FB912F932 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4F0D21B46F6F7F43840203C6 /* Assets.xcassets */; };
+		D6B208A885439A70C6449743 /* DetectionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F65A0E1F23F63ED7EA3FD50 /* DetectionScreen.swift */; };
 		F34498BFCC3E50D107D6CA5E /* TranscriptionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE501ED911600D4CA0E45777 /* TranscriptionScreen.swift */; };
 /* End PBXBuildFile section */
 
@@ -26,6 +32,7 @@
 		0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDetailScreen.swift; sourceTree = "<group>"; };
 		0E63A4141147E14858F4D29D /* OctomilAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OctomilAppApp.swift; sourceTree = "<group>"; };
 		17067B1AF88E90FE97F50F93 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2D1974D1C9819AEC72A47F04 /* ObjectDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectDetector.swift; sourceTree = "<group>"; };
 		3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairScreen.swift; sourceTree = "<group>"; };
 		40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OctomilApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -33,11 +40,16 @@
 		6C282159C16328D248F7FC20 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPairingServer.swift; sourceTree = "<group>"; };
 		749907724BE46978D119E6FC /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
+		7AF23E075699395657C25673 /* hello_16khz.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hello_16khz.wav; sourceTree = "<group>"; };
+		8F65A0E1F23F63ED7EA3FD50 /* DetectionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionScreen.swift; sourceTree = "<group>"; };
 		B468BDF227370D5DD27972A2 /* OctomilApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OctomilApp.entitlements; sourceTree = "<group>"; };
+		B569D8F9B7B91BC16054BBEC /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		C10129DD329B19C97CC1E54E /* PredictionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PredictionScreen.swift; sourceTree = "<group>"; };
 		CE501ED911600D4CA0E45777 /* TranscriptionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionScreen.swift; sourceTree = "<group>"; };
 		E3F94D3E05A116232C121770 /* DeepLinkHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkHandler.swift; sourceTree = "<group>"; };
 		F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScreen.swift; sourceTree = "<group>"; };
+		FBB786B291CDDA2D0BAB3B9C /* CameraSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSession.swift; sourceTree = "<group>"; };
+		FF9C83248BACA8D9E70E87DB /* GoldenTestRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldenTestRunner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,7 +67,11 @@
 		270581B43D2CD2575CB31FE5 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				FBB786B291CDDA2D0BAB3B9C /* CameraSession.swift */,
+				FF9C83248BACA8D9E70E87DB /* GoldenTestRunner.swift */,
+				B569D8F9B7B91BC16054BBEC /* KeychainHelper.swift */,
 				744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */,
+				2D1974D1C9819AEC72A47F04 /* ObjectDetector.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -64,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */,
+				8F65A0E1F23F63ED7EA3FD50 /* DetectionScreen.swift */,
 				3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */,
 				0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */,
 				3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */,
@@ -84,6 +101,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		B6B5A45DA8237A349DAD517D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7AF23E075699395657C25673 /* hello_16khz.wav */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		BE233935C7E433C57CE28B4F = {
 			isa = PBXGroup;
 			children = (
@@ -99,6 +124,7 @@
 				17067B1AF88E90FE97F50F93 /* Info.plist */,
 				B468BDF227370D5DD27972A2 /* OctomilApp.entitlements */,
 				B5D015E7BF27563A278D3789 /* App */,
+				B6B5A45DA8237A349DAD517D /* Resources */,
 				5F6C76878614711D1D9AD10B /* Screens */,
 				270581B43D2CD2575CB31FE5 /* Services */,
 			);
@@ -179,6 +205,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D69BDA17530EB11FB912F932 /* Assets.xcassets in Resources */,
+				A8E49C65D796A95A38E5423E /* hello_16khz.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -190,11 +217,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B0A6A91DE1D600530332EAE /* AppState.swift in Sources */,
+				9EF87482D0292C6EE47AE88A /* CameraSession.swift in Sources */,
 				9647DD8A661B95103F849EE6 /* ChatScreen.swift in Sources */,
 				CFDD6E6111A3844AB4E8F92E /* DeepLinkHandler.swift in Sources */,
+				D6B208A885439A70C6449743 /* DetectionScreen.swift in Sources */,
+				6C2811D555F10EC20D74CDA0 /* GoldenTestRunner.swift in Sources */,
 				1E6982A18899B8ED30603570 /* HomeScreen.swift in Sources */,
+				34D83979D72B74C582FFA77F /* KeychainHelper.swift in Sources */,
 				992EC351422E57C126C99AA9 /* LocalPairingServer.swift in Sources */,
 				55D06F2AB37B91366D656250 /* ModelDetailScreen.swift in Sources */,
+				CF9B55A868FFB553E8FBA1CF /* ObjectDetector.swift in Sources */,
 				0D3FB7344DF00C6266BA3E86 /* OctomilAppApp.swift in Sources */,
 				171F7D5B203B6E4F8BEE2355 /* PairScreen.swift in Sources */,
 				D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */,
@@ -402,7 +434,7 @@
 			repositoryURL = "https://github.com/octomil/octomil-ios.git";
 			requirement = {
 				kind = revision;
-				revision = 5cbc012;
+				revision = 4320167;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

@@ -140,6 +140,8 @@ struct HomeScreen: View {
             ChatScreen(model: model)
         case .keyboardPrediction:
             PredictionScreen(model: model)
+        case .objectDetection:
+            DetectionScreen(model: model)
         }
     }
 
@@ -148,6 +150,7 @@ struct HomeScreen: View {
         case .transcription: return .purple
         case .chat: return .blue
         case .keyboardPrediction: return .orange
+        case .objectDetection: return .green
         }
     }
 
