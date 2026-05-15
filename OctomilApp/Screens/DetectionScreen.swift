@@ -116,13 +116,27 @@ struct DetectionScreen: View {
 
     private func loadDetectorIfNeeded() {
         guard detector == nil else { return }
-        guard let url = model.compiledModelURL else {
-            errorMessage = "Model artifact not found on disk. Re-pair from the Pair tab."
+
+        // Resolution order:
+        //   1. Octomil-paired model (production path).
+        //   2. Bundled dev fallback (Resources/YOLOv3Tiny.mlmodelc) — populated
+        //      by `scripts/fetch_dev_model.sh`. NOT shipped in production.
+        let url: URL
+        let source: String
+        if let pairedURL = model.compiledModelURL {
+            url = pairedURL
+            source = "paired"
+        } else if let bundled = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") {
+            url = bundled
+            source = "dev fallback (YOLOv3Tiny)"
+        } else {
+            errorMessage = "No model available. Either pair a vision model or run scripts/fetch_dev_model.sh."
             return
         }
+
         do {
             detector = try ObjectDetector(modelURL: url)
-            statusMessage = "Model loaded. Ready."
+            statusMessage = "Loaded \(source). Ready."
         } catch {
             errorMessage = "Failed to load model: \(error.localizedDescription)"
         }
