@@ -4,15 +4,26 @@ import Octomil
 
 /// On-device object detection using the device camera.
 ///
-/// Mirrors `TranscriptionScreen` for the vision modality. Uses Apple's
-/// Vision framework + the SDK-provided CoreML model. Renders the live
-/// camera preview with bounding-box overlays.
+/// Mirrors `TranscriptionScreen` for the vision modality. Renders the
+/// live camera preview with bounding-box overlays.
+///
+/// **Current implementation uses raw `MLModel(contentsOf:)` + `VNCoreMLRequest`
+/// directly — it bypasses the Octomil SDK.** This is a temporary shortcut so
+/// `DetectionScreen` is testable without the full pair flow being green
+/// (blocked by the AppState `recoverModels` API drift).
+///
+/// **TODO — production path:** load via `client.downloadModel(modelId:, version:)`,
+/// returns `OctomilModel`, call `await model.warmup()`, then pass
+/// `model.mlModel` to `VNCoreMLModel(for:)`. That wires lifecycle + telemetry
+/// + canary participation through the SDK; the Apple Vision framework still
+/// runs the per-frame inference.
 ///
 /// V1 demo scope:
-///   - Model loaded from `model.compiledModelURL` (the SDK-cached path).
-///   - No telemetry yet (next session: wire to SDK telemetry sink).
-///   - No cohort/canary integration (next session: pull active version
-///     from server, swap models on rollout tick).
+///   - Model resolved from (1) `model.compiledModelURL` if paired,
+///     (2) bundled `YOLOv3Tiny.mlmodelc` as dev fallback. **Both paths
+///     currently bypass the SDK wrapper.**
+///   - No telemetry yet — needs `OctomilModel` wrapper or direct sink call.
+///   - No cohort/canary integration — needs the production load path above.
 struct DetectionScreen: View {
     @EnvironmentObject private var appState: AppState
     let model: StoredModel
@@ -117,20 +128,25 @@ struct DetectionScreen: View {
     private func loadDetectorIfNeeded() {
         guard detector == nil else { return }
 
-        // Resolution order:
-        //   1. Octomil-paired model (production path).
-        //   2. Bundled dev fallback (Resources/YOLOv3Tiny.mlmodelc) — populated
-        //      by `scripts/fetch_dev_model.sh`. NOT shipped in production.
+        // TODO: replace with `client.downloadModel(modelId:, version:)` →
+        // `OctomilModel.warmup()` → `OctomilModel.mlModel`. Current code
+        // bypasses the SDK wrapper (no warmup, no telemetry, no canary
+        // participation). Blocked on AppState reconciler-API migration.
+        //
+        // Resolution order (both paths currently raw MLModel — see TODO above):
+        //   1. Octomil-paired model URL (closest to the production path).
+        //   2. Bundled YOLOv3Tiny.mlmodelc — DEV ONLY; populated by
+        //      scripts/fetch_dev_model.sh; gitignored. Not in production builds.
         let url: URL
         let source: String
         if let pairedURL = model.compiledModelURL {
             url = pairedURL
-            source = "paired"
+            source = "paired (raw MLModel — SDK wrapper TODO)"
         } else if let bundled = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") {
             url = bundled
-            source = "dev fallback (YOLOv3Tiny)"
+            source = "DEV FALLBACK (YOLOv3Tiny, no SDK)"
         } else {
-            errorMessage = "No model available. Either pair a vision model or run scripts/fetch_dev_model.sh."
+            errorMessage = "No model available. Pair a vision model or run scripts/fetch_dev_model.sh."
             return
         }
 
