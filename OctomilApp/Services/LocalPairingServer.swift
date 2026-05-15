@@ -184,17 +184,23 @@ final class LocalPairingServer {
     private func dispatch(connection: NWConnection, request: String, rawData: Data) {
         if request.hasPrefix("POST /pair") {
             handlePair(connection: connection, request: request)
-        } else if request.hasPrefix("GET /golden/status") {
-            handleGoldenStatus(connection: connection)
-        } else if request.hasPrefix("POST /golden/reset") {
-            handleGoldenReset(connection: connection)
-        #if DEBUG
-        } else if request.hasPrefix("POST /golden/test/") {
-            handleGoldenTest(connection: connection, request: request)
-        #endif
-        } else {
-            sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
+            return
         }
+        if request.hasPrefix("GET /golden/status") {
+            handleGoldenStatus(connection: connection)
+            return
+        }
+        if request.hasPrefix("POST /golden/reset") {
+            handleGoldenReset(connection: connection)
+            return
+        }
+        #if DEBUG
+        if request.hasPrefix("POST /golden/test/") {
+            handleGoldenTest(connection: connection, request: request)
+            return
+        }
+        #endif
+        sendResponse(connection: connection, status: "404 Not Found", body: "Not Found")
     }
 
     // MARK: - Route Handlers
