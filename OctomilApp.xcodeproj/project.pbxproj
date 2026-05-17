@@ -15,6 +15,7 @@
 		34D83979D72B74C582FFA77F /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B569D8F9B7B91BC16054BBEC /* KeychainHelper.swift */; };
 		4386FFBC90B27586E926EEF2 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 749907724BE46978D119E6FC /* SettingsScreen.swift */; };
 		55D06F2AB37B91366D656250 /* ModelDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0211AFF969016EBED71518D4 /* ModelDetailScreen.swift */; };
+		622C8FCB09E797480CABBA5F /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 79CBA0D0A9647DAB47B89DD4 /* YOLOv3Tiny.mlmodel */; };
 		6C2811D555F10EC20D74CDA0 /* GoldenTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9C83248BACA8D9E70E87DB /* GoldenTestRunner.swift */; };
 		9647DD8A661B95103F849EE6 /* ChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7A01DD7F4BFC4E728DD3BB3 /* ChatScreen.swift */; };
 		992EC351422E57C126C99AA9 /* LocalPairingServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */; };
@@ -40,6 +41,7 @@
 		6C282159C16328D248F7FC20 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPairingServer.swift; sourceTree = "<group>"; };
 		749907724BE46978D119E6FC /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
+		79CBA0D0A9647DAB47B89DD4 /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
 		7AF23E075699395657C25673 /* hello_16khz.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hello_16khz.wav; sourceTree = "<group>"; };
 		8F65A0E1F23F63ED7EA3FD50 /* DetectionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionScreen.swift; sourceTree = "<group>"; };
 		B468BDF227370D5DD27972A2 /* OctomilApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OctomilApp.entitlements; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				7AF23E075699395657C25673 /* hello_16khz.wav */,
+				79CBA0D0A9647DAB47B89DD4 /* YOLOv3Tiny.mlmodel */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -232,6 +235,7 @@
 				D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */,
 				4386FFBC90B27586E926EEF2 /* SettingsScreen.swift in Sources */,
 				F34498BFCC3E50D107D6CA5E /* TranscriptionScreen.swift in Sources */,
+				622C8FCB09E797480CABBA5F /* YOLOv3Tiny.mlmodel in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -434,7 +438,7 @@
 			repositoryURL = "https://github.com/octomil/octomil-ios.git";
 			requirement = {
 				kind = revision;
-				revision = 4320167;
+				revision = 4128d31;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
