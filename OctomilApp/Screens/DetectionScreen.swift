@@ -12,7 +12,7 @@ import Octomil
 /// `DetectionScreen` is testable without the full pair flow being green
 /// (blocked by the AppState `recoverModels` API drift).
 ///
-/// **TODO — production path:** load via `client.downloadModel(modelId:, version:)`,
+/// **Followup (production path):** load via `client.downloadModel(modelId:, version:)`,
 /// returns `OctomilModel`, call `await model.warmup()`, then pass
 /// `model.mlModel` to `VNCoreMLModel(for:)`. That wires lifecycle + telemetry
 /// + canary participation through the SDK; the Apple Vision framework still
@@ -128,12 +128,12 @@ struct DetectionScreen: View {
     private func loadDetectorIfNeeded() {
         guard detector == nil else { return }
 
-        // TODO: replace with `client.downloadModel(modelId:, version:)` →
+        // Followup: replace with `client.downloadModel(modelId:, version:)` →
         // `OctomilModel.warmup()` → `OctomilModel.mlModel`. Current code
         // bypasses the SDK wrapper (no warmup, no telemetry, no canary
         // participation). Blocked on AppState reconciler-API migration.
         //
-        // Resolution order (both paths currently raw MLModel — see TODO above):
+        // Resolution order (both paths currently raw MLModel — see followup above):
         //   1. Octomil-paired model URL (closest to the production path).
         //   2. Bundled YOLOv3Tiny.mlmodelc — DEV ONLY; populated by
         //      scripts/fetch_dev_model.sh; gitignored. Not in production builds.
@@ -214,7 +214,11 @@ private struct CameraPreviewView: UIViewRepresentable {
     }
 
     final class PreviewUIView: UIView {
+        // swiftlint:disable:next static_over_final_class
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
+        // `layerClass` guarantees the underlying type — force unwrap is the
+        // documented CoreAnimation pattern for this idiom.
+        // swiftlint:disable:next force_cast
         var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
     }
 }
