@@ -7,28 +7,39 @@ import Octomil
 /// Mirrors `TranscriptionScreen` for the vision modality. Renders the
 /// live camera preview with bounding-box overlays.
 ///
-/// **Current implementation uses raw `MLModel(contentsOf:)` + `VNCoreMLRequest`
-/// directly — it bypasses the Octomil SDK.** This is a temporary shortcut so
-/// `DetectionScreen` is testable without the full pair flow being green
-/// (blocked by the AppState `recoverModels` API drift).
+/// **Model resolution, in preference order:**
 ///
-/// **Followup (production path):** load via `client.downloadModel(modelId:, version:)`,
-/// returns `OctomilModel`, call `await model.warmup()`, then pass
-/// `model.mlModel` to `VNCoreMLModel(for:)`. That wires lifecycle + telemetry
-/// + canary participation through the SDK; the Apple Vision framework still
-/// runs the per-frame inference.
+///   1. **Octomil SDK path (production)** — when an `OctomilClient` is
+///      configured, call `client.models.load(modelId, version:)` to obtain
+///      an `OctomilModel`, then `await model.warmup()` to pre-materialize
+///      weights, then pass `OctomilModel.mlModel` to `VNCoreMLModel(for:)`.
+///      The SDK owns the lifecycle: download via R2 catalog, on-disk cache,
+///      warmup, and (future) per-inference telemetry feeding the canary
+///      auto-pause flow.
 ///
-/// V1 demo scope:
-///   - Model resolved from (1) `model.compiledModelURL` if paired,
-///     (2) bundled `YOLOv3Tiny.mlmodelc` as dev fallback. **Both paths
-///     currently bypass the SDK wrapper.**
-///   - No telemetry yet — needs `OctomilModel` wrapper or direct sink call.
-///   - No cohort/canary integration — needs the production load path above.
+///   2. **Bundled dev fallback** — `Bundle.main.url(forResource: "YOLOv3Tiny",
+///      withExtension: "mlmodelc")`. Populated by `scripts/fetch_dev_model.sh`
+///      (gitignored). Bypasses the SDK entirely — no warmup, no telemetry,
+///      no canary participation. Useful for camera-loop development before
+///      a vision model exists in the Octomil catalog.
+///
+/// The Vision/CoreML inference path is identical in both cases — only the
+/// model-lifecycle owner differs.
+///
+/// **V1 demo gaps still open:**
+///   - Per-frame telemetry sink not yet wired (will pair with
+///     `OctomilModel.id` + `version` once the SDK exposes a vision-inference
+///     telemetry envelope).
+///   - Cohort/canary integration relies on the server-side fixture seeder
+///     (next workstream).
 struct DetectionScreen: View {
     @EnvironmentObject private var appState: AppState
     let model: StoredModel
 
     @State private var detector: ObjectDetector?
+    /// Retained so per-inference telemetry can reference `id` + `version`
+    /// in a follow-up. nil for the dev-fallback path.
+    @State private var octomilModel: OctomilModel?
     @State private var detections: [Detection] = []
     @State private var isRunning = false
     @State private var statusMessage = "Press Start to begin."
@@ -67,7 +78,9 @@ struct DetectionScreen: View {
         }
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { loadDetectorIfNeeded() }
+        .onAppear {
+            Task { await loadDetectorIfNeeded() }
+        }
         .onDisappear { camera.stop() }
     }
 
@@ -128,36 +141,40 @@ struct DetectionScreen: View {
 
     // MARK: - Actions
 
-    private func loadDetectorIfNeeded() {
+    @MainActor
+    private func loadDetectorIfNeeded() async {
         guard detector == nil else { return }
 
-        // Followup: replace with `client.downloadModel(modelId:, version:)` →
-        // `OctomilModel.warmup()` → `OctomilModel.mlModel`. Current code
-        // bypasses the SDK wrapper (no warmup, no telemetry, no canary
-        // participation). Blocked on AppState reconciler-API migration.
-        //
-        // Resolution order (both paths currently raw MLModel — see followup above):
-        //   1. Octomil-paired model URL (closest to the production path).
-        //   2. Bundled YOLOv3Tiny.mlmodelc — DEV ONLY; populated by
-        //      scripts/fetch_dev_model.sh; gitignored. Not in production builds.
-        let url: URL
-        let source: String
-        if let pairedURL = model.compiledModelURL {
-            url = pairedURL
-            source = "paired (raw MLModel — SDK wrapper TODO)"
-        } else if let bundled = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") {
-            url = bundled
-            source = "DEV FALLBACK (YOLOv3Tiny, no SDK)"
-        } else {
-            errorMessage = "No model available. Pair a vision model or run scripts/fetch_dev_model.sh."
-            return
+        // 1. Production path: load via the Octomil SDK if a client is configured.
+        //    SDK owns download/cache/warmup; we hand its mlModel to Vision.
+        if let client = appState.client {
+            do {
+                let loaded = try await client.models.load(model.name, version: model.version)
+                _ = await loaded.warmup() // best-effort; nil-return is non-fatal
+                detector = try ObjectDetector(mlModel: loaded.mlModel)
+                octomilModel = loaded
+                statusMessage = "Loaded via Octomil (\(loaded.id) v\(loaded.version)). Ready."
+                errorMessage = nil
+                return
+            } catch {
+                // Fall through to dev fallback. Surface the SDK error in the
+                // status line so 'why am I in fallback mode?' is visible.
+                statusMessage = "SDK load failed (\(error.localizedDescription)); trying dev fallback."
+            }
         }
 
+        // 2. Dev fallback: load a bundled .mlmodelc directly. Bypasses the SDK
+        //    entirely. Populated by scripts/fetch_dev_model.sh (gitignored).
+        guard let bundled = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
+            errorMessage = "No model available. Pair a vision model via the Pair tab, or run scripts/fetch_dev_model.sh for a dev fallback."
+            return
+        }
         do {
-            detector = try ObjectDetector(modelURL: url)
-            statusMessage = "Loaded \(source). Ready."
+            detector = try ObjectDetector(modelURL: bundled)
+            statusMessage = "Loaded DEV FALLBACK (YOLOv3Tiny, no SDK). Ready."
+            errorMessage = nil
         } catch {
-            errorMessage = "Failed to load model: \(error.localizedDescription)"
+            errorMessage = "Failed to load fallback model: \(error.localizedDescription)"
         }
     }
 
