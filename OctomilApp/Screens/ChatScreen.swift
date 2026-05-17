@@ -162,9 +162,11 @@ struct ChatScreen: View {
         inputText = ""
         errorMessage = nil
 
-        if let imageData = selectedImageData {
-            let compressed = Self.compressImage(imageData, maxDimension: 1024, quality: 0.8)
-            messages.append(.user(text.isEmpty ? "What's in this image?" : text, imageData: compressed))
+        if selectedImageData != nil {
+            // FIXME(spec/sdk-client-reconciler-api adjacent): SDK's
+            // ChatMessage doesn't expose a multimodal `imageData:` overload.
+            // Stubbed to text-only until SDK adds multimodal support.
+            messages.append(.user(text.isEmpty ? "What's in this image?" : text))
             selectedImageData = nil
             photoSelection = nil
         } else {
@@ -242,31 +244,12 @@ private struct ChatBubble: View {
             if message.role == .user { Spacer(minLength: 48) }
 
             VStack(alignment: .leading, spacing: 4) {
-                if let parts = message.parts {
-                    ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                        switch part {
-                        case .image(let data, _, _, _):
-                            if let data, let decoded = Data(base64Encoded: data),
-                               let uiImage = UIImage(data: decoded) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(maxHeight: 200)
-                                    .cornerRadius(8)
-                            }
-                        case .text(let text):
-                            if !text.isEmpty {
-                                Text(text)
-                                    .textSelection(.enabled)
-                            }
-                        default:
-                            EmptyView()
-                        }
-                    }
-                } else {
-                    Text(message.content ?? "")
-                        .textSelection(.enabled)
-                }
+                // FIXME(SDK multimodal drift): SDK's ChatMessage no longer
+                // exposes `.parts` (multimodal content). Stubbed to
+                // text-only `.content` until SDK adds multimodal support.
+                // Image bubbles are not currently rendered.
+                Text(message.content ?? "")
+                    .textSelection(.enabled)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

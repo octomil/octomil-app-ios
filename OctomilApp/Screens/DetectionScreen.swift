@@ -116,7 +116,10 @@ struct DetectionScreen: View {
                     .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(detector == nil && errorMessage == nil) // loading state
+            // No detector → can't run inference. Holds for both the
+            // pre-load state ('Press Start to begin.') and the
+            // failed-load state (errorMessage set, no detector).
+            .disabled(detector == nil)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
@@ -206,11 +209,30 @@ private struct CameraPreviewView: UIViewRepresentable {
         let view = PreviewUIView()
         view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspectFill
+        applyPortraitOrientation(to: view.previewLayer.connection)
         return view
     }
 
     func updateUIView(_ uiView: PreviewUIView, context: Context) {
         uiView.previewLayer.session = session
+        applyPortraitOrientation(to: uiView.previewLayer.connection)
+    }
+
+    /// Orient the preview layer's connection to portrait. This is independent
+    /// of the data-output connection in `CameraSession` (which deliberately
+    /// stays unrotated so Vision can interpret sensor-native buffers via
+    /// orientation hint).
+    private func applyPortraitOrientation(to connection: AVCaptureConnection?) {
+        guard let connection else { return }
+        if #available(iOS 17.0, macOS 14.0, *) {
+            if connection.isVideoRotationAngleSupported(90) {
+                connection.videoRotationAngle = 90
+            }
+        } else {
+            if connection.isVideoOrientationSupported {
+                connection.videoOrientation = .portrait
+            }
+        }
     }
 
     final class PreviewUIView: UIView {

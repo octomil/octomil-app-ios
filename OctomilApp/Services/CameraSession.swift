@@ -61,18 +61,16 @@ final class CameraSession: NSObject {
         }
         session.addOutput(videoOutput)
 
-        // Lock to portrait for the demo. iPad-landscape support is a follow-up.
-        if let connection = videoOutput.connection(with: .video) {
-            if #available(iOS 17.0, macOS 14.0, *) {
-                if connection.isVideoRotationAngleSupported(90) {
-                    connection.videoRotationAngle = 90
-                }
-            } else {
-                if connection.isVideoOrientationSupported {
-                    connection.videoOrientation = .portrait
-                }
-            }
-        }
+        // NOTE: deliberately NOT setting `videoRotationAngle` /
+        // `videoOrientation` on the data-output connection. Doing so would
+        // physically rotate the pixel buffer delivered to the delegate, and
+        // we'd be double-rotating because we also tell Vision the source
+        // orientation (`.right` for a portrait back-camera capture). Vision
+        // can interpret the sensor-native buffer directly via the orientation
+        // hint — cheaper and avoids the off-by-90 detection bug.
+        //
+        // The preview layer rotation is handled separately in the SwiftUI
+        // CameraPreviewView (different AVCaptureConnection).
 
         session.commitConfiguration()
         configured = true
