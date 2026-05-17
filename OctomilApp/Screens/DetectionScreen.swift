@@ -20,8 +20,11 @@ import Octomil
 ///   2. **Bundled dev fallback** — `Bundle.main.url(forResource: "YOLOv3Tiny",
 ///      withExtension: "mlmodelc")`. Populated by `scripts/fetch_dev_model.sh`
 ///      (gitignored). Bypasses the SDK entirely — no warmup, no telemetry,
-///      no canary participation. Useful for camera-loop development before
-///      a vision model exists in the Octomil catalog.
+///      no canary participation. Used **only when no Octomil client is
+///      configured** (unpaired device / standalone dev runs). When a client
+///      exists but `client.models.load(...)` fails, the screen surfaces the
+///      SDK error rather than falling through — silent fallback would hide
+///      real pairing / catalog / network / canary failures from the demo.
 ///
 /// The Vision/CoreML inference path is identical in both cases — only the
 /// model-lifecycle owner differs.
@@ -145,8 +148,11 @@ struct DetectionScreen: View {
     private func loadDetectorIfNeeded() async {
         guard detector == nil else { return }
 
-        // 1. Production path: load via the Octomil SDK if a client is configured.
-        //    SDK owns download/cache/warmup; we hand its mlModel to Vision.
+        // Production path: when an Octomil client is configured, the SDK is
+        // the SOLE source of truth for paired models. A failure here must
+        // surface — silently falling back to a bundled dev model would hide
+        // real auth / network / canary-rollback failures and make the
+        // demo look healthy while bypassing Octomil entirely.
         if let client = appState.client {
             do {
                 let loaded = try await client.models.load(model.name, version: model.version)
@@ -155,19 +161,22 @@ struct DetectionScreen: View {
                 octomilModel = loaded
                 statusMessage = "Loaded via Octomil (\(loaded.id) v\(loaded.version)). Ready."
                 errorMessage = nil
-                return
             } catch {
-                // Fall through to dev fallback. Surface the SDK error in the
-                // status line so 'why am I in fallback mode?' is visible.
-                statusMessage = "SDK load failed (\(error.localizedDescription)); trying dev fallback."
+                errorMessage = "Octomil load failed for \(model.name) v\(model.version): "
+                    + "\(error.localizedDescription). Check pairing / catalog visibility / network. "
+                    + "(Dev fallback is intentionally disabled when a client is configured — "
+                    + "see DetectionScreen.swift comments.)"
             }
+            return
         }
 
-        // 2. Dev fallback: load a bundled .mlmodelc directly. Bypasses the SDK
-        //    entirely. Populated by scripts/fetch_dev_model.sh (gitignored).
+        // Dev fallback: only when no Octomil client exists (unpaired device
+        // / standalone dev runs). Bypasses the SDK entirely; loads a
+        // bundled .mlmodelc populated by scripts/fetch_dev_model.sh
+        // (gitignored, not shipped in production builds).
         guard let bundled = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
-            errorMessage = "No model available. Pair a vision model via the Pair tab, "
-                + "or run scripts/fetch_dev_model.sh for a dev fallback."
+            errorMessage = "No Octomil client configured and no dev fallback model present. "
+                + "Pair a device via the Pair tab, or run scripts/fetch_dev_model.sh."
             return
         }
         do {
@@ -175,7 +184,7 @@ struct DetectionScreen: View {
             statusMessage = "Loaded DEV FALLBACK (YOLOv3Tiny, no SDK). Ready."
             errorMessage = nil
         } catch {
-            errorMessage = "Failed to load fallback model: \(error.localizedDescription)"
+            errorMessage = "Failed to load dev-fallback model: \(error.localizedDescription)"
         }
     }
 
