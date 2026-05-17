@@ -438,7 +438,7 @@
 			repositoryURL = "https://github.com/octomil/octomil-ios.git";
 			requirement = {
 				kind = revision;
-				revision = 4128d31;
+				revision = 8d52d46;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
