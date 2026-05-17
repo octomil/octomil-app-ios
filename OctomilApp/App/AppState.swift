@@ -248,36 +248,54 @@ final class AppState: ObservableObject {
     /// Triggers SDK reconciliation to recover missing model files, then
     /// syncs local storedModels with the SDK's metadata store.
     ///
-    /// **Stubbed pending SDK fix.** The SDK previously exposed
-    /// `OctomilClient.recoverModels()` and `.installedModels()`; both were
-    /// removed without a migration shim. The new SDK now auto-reconciles
-    /// during `register()` via `setupArtifactReconciler(deviceId:)`
-    /// (see `octomil-ios/Sources/Octomil/Client/OctomilClient.swift:631`),
-    /// so manual recovery is largely redundant. But the path-sync logic
-    /// below still needs an SDK-exposed inventory call to be restored.
-    ///
-    /// Tracking: `octomil-workspace/docs/specs/sdk-client-reconciler-api.md`
-    /// (PR `octomil-workspace#66`).
+    /// The SDK's ``ArtifactReconciler`` handles downloading via the server's
+    /// desired-state endpoint and multi-file artifact support. This method
+    /// just bridges the SDK's record paths back into the app's StoredModel list.
     func recoverAndSyncModels() async {
-        guard client != nil else { return }
-        // FIXME(spec/sdk-client-reconciler-api): no-op until SDK restores a
-        // public surface for manual reconcile + installed-record enumeration.
-        // The SDK auto-reconciles during register(), so the only behavior
-        // we lose here is the post-cache-eviction path-resync. Re-enable
-        // once `client.recoverModels()` (or the agreed replacement) lands.
+        guard let client else { return }
+
+        // 1. Let the SDK reconciler download any missing artifacts
+        try? await client.recoverModels()
+
+        // 2. Sync storedModel paths from SDK metadata
+        syncModelPathsFromSDK()
     }
 
     /// Updates storedModels file paths from the SDK's installed model metadata.
     ///
-    /// **Stubbed pending SDK fix** — see `recoverAndSyncModels` above.
-    /// `client.installedModels()` was removed; `client.models.list()` returns
-    /// `CachedModel` which lacks `filePath`, so a complete migration needs
-    /// either (a) the convenience method restored or (b) `filePath` added
-    /// to `CachedModel`. See `octomil-workspace#66`.
+    /// After the SDK reconciler recovers models (possibly to a different directory
+    /// than the original pairing path), this method updates the app's StoredModel
+    /// entries to point at the SDK's artifact directory and re-registers runtimes.
     func syncModelPathsFromSDK() {
-        guard client != nil else { return }
-        // FIXME(spec/sdk-client-reconciler-api): no-op until SDK restores
-        // installed-record enumeration with file-path info.
+        guard let client else { return }
+        let sdkRecords = client.installedModels()
+
+        var changed = false
+        for (index, stored) in storedModels.enumerated() {
+            guard let record = sdkRecords.first(where: { $0.modelId == stored.name }) else { continue }
+
+            // Update path if SDK recovered to a different location, or if file was missing
+            let sdkPath = record.filePath
+            if stored.modelPath != sdkPath || !stored.isAvailableOnDisk {
+                let updated = StoredModel(
+                    from: PairedModelInfo(
+                        name: stored.name,
+                        version: stored.version,
+                        sizeString: stored.sizeString,
+                        runtime: stored.runtime,
+                        tokensPerSecond: stored.tokensPerSecond,
+                        compiledModelURL: URL(fileURLWithPath: sdkPath),
+                        resourceBindings: record.resourceBindings ?? stored.resourceBindings ?? [:]
+                    ),
+                    capability: stored.capability,
+                    supportsStreaming: stored.supportsStreaming
+                )
+                storedModels[index] = updated
+                registerRuntime(for: updated)
+                changed = true
+            }
+        }
+        if changed { persistStoredModels() }
     }
 
     // MARK: - Local Pairing Server
