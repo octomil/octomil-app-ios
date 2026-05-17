@@ -166,7 +166,8 @@ struct DetectionScreen: View {
         // 2. Dev fallback: load a bundled .mlmodelc directly. Bypasses the SDK
         //    entirely. Populated by scripts/fetch_dev_model.sh (gitignored).
         guard let bundled = Bundle.main.url(forResource: "YOLOv3Tiny", withExtension: "mlmodelc") else {
-            errorMessage = "No model available. Pair a vision model via the Pair tab, or run scripts/fetch_dev_model.sh for a dev fallback."
+            errorMessage = "No model available. Pair a vision model via the Pair tab, "
+                + "or run scripts/fetch_dev_model.sh for a dev fallback."
             return
         }
         do {
