@@ -14,19 +14,31 @@ struct Detection: Identifiable {
 
 /// Loads a CoreML model and runs `VNCoreMLRequest` per frame.
 ///
-/// Two model paths are supported:
-///   1. URL — point at an `.mlmodelc` (compiled) on disk. This is what the
-///      Octomil SDK's `ModelManager.downloadModel(...)` returns.
-///   2. Bundled resource — used during development only. Set the bundle
-///      resource name via `init(bundledResource:)`.
+/// Three construction paths, in preference order:
+///   1. `init(mlModel:)` — accept a pre-loaded `MLModel`. This is the
+///      production path: caller hands us `OctomilModel.mlModel` after
+///      `client.models.load(...)` + `OctomilModel.warmup()`. SDK owns the
+///      lifecycle (download, cache, warmup, telemetry, canary participation).
+///   2. `init(modelURL:)` — load `MLModel(contentsOf:)` directly. Used by
+///      the dev fallback that reads a bundled `.mlmodelc` resource. Bypasses
+///      the SDK wrapper; no warmup, no telemetry.
 ///
-/// In v1 demos we use a YOLOv8n-style detector with `VNRecognizedObjectObservation`
-/// outputs (Vision auto-decodes Ultralytics-shape outputs when the model is
-/// converted with `coremltools` and exported with NMS layers attached).
+/// Vision-side behaviour is identical across paths — `VNCoreMLModel` +
+/// `VNCoreMLRequest` over the same underlying `MLModel`. Only the
+/// lifecycle owner differs.
 final class ObjectDetector {
     private let request: VNCoreMLRequest
     private(set) var lastInferenceMs: Double = 0
 
+    /// Production path — caller obtained the `MLModel` via the SDK.
+    init(mlModel: MLModel) throws {
+        let visionModel = try VNCoreMLModel(for: mlModel)
+        self.request = VNCoreMLRequest(model: visionModel)
+        self.request.imageCropAndScaleOption = .scaleFill
+    }
+
+    /// Dev fallback — load directly from a compiled `.mlmodelc` on disk.
+    /// Bypasses the SDK; no warmup, no telemetry.
     init(modelURL: URL) throws {
         let model = try MLModel(contentsOf: modelURL)
         let visionModel = try VNCoreMLModel(for: model)
