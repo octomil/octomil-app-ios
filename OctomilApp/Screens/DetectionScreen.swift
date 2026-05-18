@@ -46,6 +46,10 @@ struct DetectionScreen: View {
     /// Per-inference reporter. Created when both an OctomilClient + an
     /// OctomilModel are available; nil otherwise (telemetry simply no-ops).
     @State private var telemetry: DetectionTelemetry?
+    /// Periodic JPEG thumbnail uploader → server frame-thumbnails endpoint
+    /// → dashboard LatestFrameTile. nil for the dev-fallback path (no
+    /// Octomil client / no device token to upload with).
+    @State private var thumbnailUploader: ThumbnailUploader?
     @State private var detections: [Detection] = []
     @State private var isRunning = false
     @State private var statusMessage = "Press Start to begin."
@@ -167,6 +171,20 @@ struct DetectionScreen: View {
                     modelId: loaded.id,
                     modelVersion: loaded.version
                 )
+
+                // Thumbnail uploader for the dashboard's LatestFrameTile.
+                // Needs the server base URL + a device token. Both come
+                // from appState (populated by the pair flow). deviceId
+                // comes from the SDK's registered identity.
+                if let deviceId = client.deviceId, !appState.deviceToken.isEmpty,
+                   let baseURL = URL(string: appState.serverURL) {
+                    thumbnailUploader = ThumbnailUploader(
+                        serverURL: baseURL,
+                        deviceToken: appState.deviceToken,
+                        deviceId: deviceId
+                    )
+                }
+
                 statusMessage = "Loaded via Octomil (\(loaded.id) v\(loaded.version)). Ready."
                 errorMessage = nil
             } catch {
@@ -210,7 +228,7 @@ struct DetectionScreen: View {
                 return
             }
 
-            camera.onFrame = { [detector, telemetry] pixelBuffer, orientation in
+            camera.onFrame = { [detector, telemetry, thumbnailUploader] pixelBuffer, orientation in
                 guard let detector else { return }
                 let results = detector.detect(pixelBuffer: pixelBuffer, orientation: orientation)
                 let latencyMs = detector.lastInferenceMs
@@ -219,6 +237,10 @@ struct DetectionScreen: View {
                 // reporter). nil when no Octomil client is configured
                 // (dev-fallback path); the call site stays uniform.
                 telemetry?.report(latencyMs: latencyMs, detectionCount: results.count)
+
+                // Periodic JPEG upload for the dashboard tile (throttled
+                // to ~5s inside the uploader). nil on dev-fallback path.
+                thumbnailUploader?.submit(pixelBuffer: pixelBuffer, orientation: orientation)
 
                 Task { @MainActor in
                     self.detections = results
