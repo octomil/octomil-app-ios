@@ -21,6 +21,7 @@
 		992EC351422E57C126C99AA9 /* LocalPairingServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */; };
 		9EF87482D0292C6EE47AE88A /* CameraSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB786B291CDDA2D0BAB3B9C /* CameraSession.swift */; };
 		A8E49C65D796A95A38E5423E /* hello_16khz.wav in Resources */ = {isa = PBXBuildFile; fileRef = 7AF23E075699395657C25673 /* hello_16khz.wav */; };
+		C8387F9DB157EA84B0D257B5 /* ThumbnailUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4043CC33E3F2C9E121331DDE /* ThumbnailUploader.swift */; };
 		CF9B55A868FFB553E8FBA1CF /* ObjectDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1974D1C9819AEC72A47F04 /* ObjectDetector.swift */; };
 		CFDD6E6111A3844AB4E8F92E /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F94D3E05A116232C121770 /* DeepLinkHandler.swift */; };
 		D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10129DD329B19C97CC1E54E /* PredictionScreen.swift */; };
@@ -37,6 +38,7 @@
 		3AD7E4E5DBF3E8709F591F1D /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		3F0978B7CE1AC2247D5E26A8 /* PairScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairScreen.swift; sourceTree = "<group>"; };
 		40064D45B7AFEB9B3889E3E0 /* OctomilApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OctomilApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4043CC33E3F2C9E121331DDE /* ThumbnailUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailUploader.swift; sourceTree = "<group>"; };
 		4F0D21B46F6F7F43840203C6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6C282159C16328D248F7FC20 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPairingServer.swift; sourceTree = "<group>"; };
@@ -74,6 +76,7 @@
 				B569D8F9B7B91BC16054BBEC /* KeychainHelper.swift */,
 				744E324B5A59F00A201B7BD1 /* LocalPairingServer.swift */,
 				2D1974D1C9819AEC72A47F04 /* ObjectDetector.swift */,
+				4043CC33E3F2C9E121331DDE /* ThumbnailUploader.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -234,6 +237,7 @@
 				171F7D5B203B6E4F8BEE2355 /* PairScreen.swift in Sources */,
 				D170C34691CA601AC5202407 /* PredictionScreen.swift in Sources */,
 				4386FFBC90B27586E926EEF2 /* SettingsScreen.swift in Sources */,
+				C8387F9DB157EA84B0D257B5 /* ThumbnailUploader.swift in Sources */,
 				F34498BFCC3E50D107D6CA5E /* TranscriptionScreen.swift in Sources */,
 				622C8FCB09E797480CABBA5F /* YOLOv3Tiny.mlmodel in Sources */,
 			);
