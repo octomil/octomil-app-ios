@@ -43,6 +43,10 @@ struct DetectionScreen: View {
     /// Retained so per-inference telemetry can reference `id` + `version`
     /// in a follow-up. nil for the dev-fallback path.
     @State private var octomilModel: OctomilModel?
+    /// Periodic JPEG thumbnail uploader → server frame-thumbnails endpoint
+    /// → dashboard LatestFrameTile. nil for the dev-fallback path (no
+    /// Octomil client / no device token to upload with).
+    @State private var thumbnailUploader: ThumbnailUploader?
     @State private var detections: [Detection] = []
     @State private var isRunning = false
     @State private var statusMessage = "Press Start to begin."
@@ -159,6 +163,20 @@ struct DetectionScreen: View {
                 _ = await loaded.warmup() // best-effort; nil-return is non-fatal
                 detector = try ObjectDetector(mlModel: loaded.mlModel)
                 octomilModel = loaded
+
+                // Thumbnail uploader for the dashboard's LatestFrameTile.
+                // Needs the server base URL + a device token. Both come
+                // from appState (populated by the pair flow). deviceId
+                // comes from the SDK's registered identity.
+                if let deviceId = client.deviceId, !appState.deviceToken.isEmpty,
+                   let baseURL = URL(string: appState.serverURL) {
+                    thumbnailUploader = ThumbnailUploader(
+                        serverURL: baseURL,
+                        deviceToken: appState.deviceToken,
+                        deviceId: deviceId
+                    )
+                }
+
                 statusMessage = "Loaded via Octomil (\(loaded.id) v\(loaded.version)). Ready."
                 errorMessage = nil
             } catch {
@@ -202,9 +220,14 @@ struct DetectionScreen: View {
                 return
             }
 
-            camera.onFrame = { [detector] pixelBuffer, orientation in
+            camera.onFrame = { [detector, thumbnailUploader] pixelBuffer, orientation in
                 guard let detector else { return }
                 let results = detector.detect(pixelBuffer: pixelBuffer, orientation: orientation)
+
+                // Periodic JPEG upload for the dashboard tile (throttled
+                // to ~5s inside the uploader). nil on dev-fallback path.
+                thumbnailUploader?.submit(pixelBuffer: pixelBuffer, orientation: orientation)
+
                 Task { @MainActor in
                     self.detections = results
                     self.lastInferenceMs = detector.lastInferenceMs
