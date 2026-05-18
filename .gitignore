@@ -1,3 +1,9 @@
+# Xcode + SwiftPM build artifacts.
+# OctomilApp.xcodeproj is xcodegen-generated from project.yml — never
+# committed. CI's "Generate Xcode project" step (.github/workflows/ci.yml)
+# runs `xcodegen generate` before xcodebuild. Contributors do the same
+# locally after cloning. The Package.resolved inside project.xcworkspace
+# is also regenerated on first build.
 .build/
 .spm-cache/
 .swiftpm/
