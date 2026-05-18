@@ -71,9 +71,16 @@ final class DetectionTelemetry: @unchecked Sendable {
         client.telemetry.track(name: "inference.started", attributes: baseAttrs)
 
         var completedAttrs = baseAttrs
-        completedAttrs["inference.ttfc_ms"] = Int(latencyMs.rounded())
-        completedAttrs["inference.total_duration_ms"] = Int(latencyMs.rounded())
-        // Vision-specific extension; server may ignore unknown attrs but
+        // Server's completion handler reads these specific attribute names
+        // (see octomil-server telemetry_events_v2._handle_inference_event):
+        //   inference.duration_ms → InferenceSession.total_duration_ms
+        //   inference.ttft_ms     → InferenceSession.ttfc_ms (TTFT/TTFC
+        //                            naming mismatch is server-side; mind
+        //                            the gap when adding new attrs).
+        // For one-shot vision inference, both equal the per-frame latency.
+        completedAttrs["inference.duration_ms"] = Int(latencyMs.rounded())
+        completedAttrs["inference.ttft_ms"] = Int(latencyMs.rounded())
+        // Vision-specific extension; server ignores unknown attrs but
         // they ride through the OTLP envelope for ad-hoc dashboard use.
         completedAttrs["inference.detection_count"] = detectionCount
 
