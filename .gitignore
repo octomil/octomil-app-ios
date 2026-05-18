@@ -5,3 +5,7 @@
 DerivedData/
 xcuserdata/
 *.xcworkspace/
+
+# CoreML models — too large to commit. Run scripts/fetch_dev_model.sh.
+OctomilApp/Resources/*.mlmodel
+OctomilApp/Resources/*.mlpackage

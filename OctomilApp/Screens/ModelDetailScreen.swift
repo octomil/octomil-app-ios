@@ -38,6 +38,8 @@ struct ModelDetailScreen: View {
             ChatScreen(model: model)
         case .keyboardPrediction:
             PredictionScreen(model: model)
+        case .objectDetection:
+            DetectionScreen(model: model)
         }
     }
 }

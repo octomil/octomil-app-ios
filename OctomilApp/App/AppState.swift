@@ -12,6 +12,7 @@ enum ModelCapability: String, Codable {
     case transcription
     case chat
     case keyboardPrediction = "keyboard_prediction"
+    case objectDetection = "object_detection"
 }
 
 // MARK: - Stored Model
@@ -60,6 +61,7 @@ struct StoredModel: Codable, Identifiable {
         case .transcription: return "Transcription"
         case .chat: return "Chat"
         case .keyboardPrediction: return "Prediction"
+        case .objectDetection: return "Detection"
         }
     }
 
@@ -68,6 +70,7 @@ struct StoredModel: Codable, Identifiable {
         case .transcription: return "waveform"
         case .chat: return "bubble.left.and.bubble.right"
         case .keyboardPrediction: return "text.cursor"
+        case .objectDetection: return "viewfinder"
         }
     }
 
@@ -79,6 +82,9 @@ struct StoredModel: Codable, Identifiable {
         let rt = runtime.lowercased()
         let set = Set(modalities?.map { $0.lowercased() } ?? [])
 
+        if set.contains("vision") || set.contains("image") {
+            return (.objectDetection, false)
+        }
         if set.contains("audio") || set.contains("speech") || set.contains("voice") {
             let streaming = (rt == "sherpa" || rt == "sherpa-onnx")
             return (.transcription, streaming)

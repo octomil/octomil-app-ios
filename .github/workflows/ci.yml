@@ -17,7 +17,11 @@ concurrency:
 
 env:
   SCHEME: OctomilApp
-  XCODE_VERSION: "16.2"
+  # 16.4 is the macos-15 runner default and ships Swift 6.1. Required by
+  # transitive dependencies of the bumped SDK pin (8d52d46): swift-crypto
+  # 4.5.0 declares `swift-tools-version:6.1`, so Xcode 16.2 / Swift 6.0
+  # failed SPM resolution. If the runner default moves, this line can drop.
+  XCODE_VERSION: "16.4"
 
 jobs:
   build:

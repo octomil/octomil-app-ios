@@ -24,6 +24,7 @@ let package = Package(
                 "Info.plist",
                 "App/OctomilAppApp.swift",
                 "Screens/ChatScreen.swift",
+                "Screens/DetectionScreen.swift",
                 "Screens/HomeScreen.swift",
                 "Screens/ModelDetailScreen.swift",
                 "Screens/PairScreen.swift",
