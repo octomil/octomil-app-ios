@@ -40,9 +40,12 @@ struct DetectionScreen: View {
     let model: StoredModel
 
     @State private var detector: ObjectDetector?
-    /// Retained so per-inference telemetry can reference `id` + `version`
-    /// in a follow-up. nil for the dev-fallback path.
+    /// Retained so per-inference telemetry can reference `id` + `version`.
+    /// nil for the dev-fallback path (no Octomil client → nothing to report to).
     @State private var octomilModel: OctomilModel?
+    /// Per-inference reporter. Created when both an OctomilClient + an
+    /// OctomilModel are available; nil otherwise (telemetry simply no-ops).
+    @State private var telemetry: DetectionTelemetry?
     @State private var detections: [Detection] = []
     @State private var isRunning = false
     @State private var statusMessage = "Press Start to begin."
@@ -159,6 +162,11 @@ struct DetectionScreen: View {
                 _ = await loaded.warmup() // best-effort; nil-return is non-fatal
                 detector = try ObjectDetector(mlModel: loaded.mlModel)
                 octomilModel = loaded
+                telemetry = DetectionTelemetry(
+                    client: client,
+                    modelId: loaded.id,
+                    modelVersion: loaded.version
+                )
                 statusMessage = "Loaded via Octomil (\(loaded.id) v\(loaded.version)). Ready."
                 errorMessage = nil
             } catch {
@@ -202,12 +210,19 @@ struct DetectionScreen: View {
                 return
             }
 
-            camera.onFrame = { [detector] pixelBuffer, orientation in
+            camera.onFrame = { [detector, telemetry] pixelBuffer, orientation in
                 guard let detector else { return }
                 let results = detector.detect(pixelBuffer: pixelBuffer, orientation: orientation)
+                let latencyMs = detector.lastInferenceMs
+
+                // Report via SDK telemetry (throttled to 1 Hz inside the
+                // reporter). nil when no Octomil client is configured
+                // (dev-fallback path); the call site stays uniform.
+                telemetry?.report(latencyMs: latencyMs, detectionCount: results.count)
+
                 Task { @MainActor in
                     self.detections = results
-                    self.lastInferenceMs = detector.lastInferenceMs
+                    self.lastInferenceMs = latencyMs
                 }
             }
 
