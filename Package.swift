@@ -5,12 +5,11 @@ import PackageDescription
 let package = Package(
     name: "OctomilApp",
     platforms: [
-        .iOS(.v16),
+        .iOS(.v17),
         .macOS(.v14),
     ],
     dependencies: [
-        .package(url: "https://github.com/octomil/octomil-ios.git", branch: "main"),
-        .package(url: "https://github.com/swiftlang/swift-testing.git", exact: "6.2.4"),
+        .package(url: "https://github.com/octomil/octomil-ios.git", revision: "8d52d46fcd862b332f3b0ad7fe08437eff7d23a0"),
     ],
     targets: [
         .target(
@@ -40,7 +39,6 @@ let package = Package(
             name: "OctomilAppTests",
             dependencies: [
                 "OctomilAppLib",
-                .product(name: "Testing", package: "swift-testing"),
             ],
             path: "Tests/OctomilAppTests",
             swiftSettings: [
