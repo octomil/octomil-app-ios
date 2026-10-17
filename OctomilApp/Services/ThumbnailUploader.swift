@@ -1,6 +1,7 @@
 import AVFoundation
 import CoreImage
 import Foundation
+import os.log
 import UIKit
 
 /// Uploads compressed JPEG thumbnails of camera frames to the Octomil server.
@@ -22,6 +23,9 @@ import UIKit
 /// Hard cap at 256 KB to match the server's `_MAX_THUMBNAIL_BYTES`;
 /// if a frame exceeds, drop quality and retry once.
 ///
+/// **Consent.** Callers must gate on an explicit user opt-in; the init
+/// refuses non-first-party hosts so frames never leave to arbitrary servers.
+///
 /// **No payload caching across the queue.** Uploads fire-and-forget;
 /// failures log + retry on the next interval. Demo-mode: we don't
 /// queue frames during connectivity gaps.
@@ -32,6 +36,7 @@ final class ThumbnailUploader: @unchecked Sendable {
     private let interval: TimeInterval
 
     private let session: URLSession
+    private static let logger = Logger(subsystem: "ai.octomil.app", category: "ThumbnailUploader")
     private let ciContext = CIContext()
     private let lock = NSLock()
     private var lastUploadedAt: Date?
@@ -39,13 +44,14 @@ final class ThumbnailUploader: @unchecked Sendable {
     /// Initialize. `serverURL` should be the base (e.g.
     /// `https://api.octomil.com`) without `/api/v1` — this class
     /// appends the path itself.
-    init(
+    init?(
         serverURL: URL,
         deviceToken: String,
         deviceId: String,
         interval: TimeInterval = 5.0,
         session: URLSession = .shared
     ) {
+        guard AppState.isTrustedServer(serverURL.absoluteString) else { return nil }
         self.serverURL = serverURL
         self.deviceToken = deviceToken
         self.deviceId = deviceId
@@ -129,11 +135,11 @@ final class ThumbnailUploader: @unchecked Sendable {
             // happened during a demo run. Demo scope: no retries,
             // no offline queue.
             if let error {
-                print("[ThumbnailUploader] upload failed: \(error.localizedDescription)")
+                Self.logger.error("upload failed: \(error.localizedDescription, privacy: .public)")
                 return
             }
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                print("[ThumbnailUploader] HTTP \(http.statusCode) from server")
+                Self.logger.error("HTTP \(http.statusCode) from server")
             }
         }
         task.resume()
