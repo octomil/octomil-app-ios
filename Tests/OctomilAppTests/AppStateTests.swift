@@ -20,7 +20,7 @@ private func resetAppStorageDefaults() {
     }
 }
 
-@Suite("AppState")
+@Suite("AppState", .serialized)
 @MainActor
 struct AppStateTests {
 
