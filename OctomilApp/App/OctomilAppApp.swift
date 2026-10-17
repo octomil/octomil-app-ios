@@ -51,10 +51,7 @@ struct CompanionApp: App {
     private func handleDeepLink(_ url: URL) {
         guard let result = DeepLinkHandler.parse(url) else { return }
 
-        if let host = result.host {
-            appState.serverURL = host
-            appState.initializeClient()
-        }
+        appState.applyPairingHost(result.host)
 
         appState.pendingPairingCode = result.pairingCode
         appState.showPairingSheet = true

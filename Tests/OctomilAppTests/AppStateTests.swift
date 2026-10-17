@@ -14,9 +14,13 @@ private func resetAppStorageDefaults() {
     for key in keys {
         UserDefaults.standard.removeObject(forKey: key)
     }
+    // AppState.init restores from the Keychain, which persists across tests.
+    for key in ["device_token", "org_id", "server_url"] {
+        KeychainHelper.delete(key: key)
+    }
 }
 
-@Suite("AppState")
+@Suite("AppState", .serialized)
 @MainActor
 struct AppStateTests {
 
@@ -302,7 +306,7 @@ struct AppStateTests {
     @Test("startLocalServer creates server and assigns port")
     func startLocalServer() async throws {
         let state = AppState()
-        state.startLocalServer()
+        await state.startLocalServer()
 
         // Wait for the server to bind
         try await Task.sleep(nanoseconds: 500_000_000)

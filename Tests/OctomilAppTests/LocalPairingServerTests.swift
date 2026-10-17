@@ -67,6 +67,18 @@ struct LocalPairingServerTests {
         #expect(modelSent == "phi-4-mini")
     }
 
+    @Test("POST /pair with a wrong nonce does not invoke handler")
+    func wrongNonceIgnored() async throws {
+        var called = false
+        let server = LocalPairingServer { _, _, _ in called = true }
+        server.start()
+        try await Task.sleep(nanoseconds: 500_000_000)
+        try await sendHTTPRequest(port: server.port, method: "POST", path: "/pair", body: #"{"code":"X","nonce":"nope"}"#)
+        try await Task.sleep(nanoseconds: 500_000_000)
+        server.stop()
+        #expect(!called)
+    }
+
     @Test("POST /pair with code only sets host and model to nil")
     func pairRequestCodeOnly() async throws {
         let (codeSent, hostSent, modelSent) = try await performPairRequest(
@@ -215,7 +227,10 @@ struct LocalPairingServerTests {
         let port = server.port
         #expect(port > 0)
 
-        try await sendHTTPRequest(port: port, method: "POST", path: "/pair", body: body)
+        var payload = (try? JSONSerialization.jsonObject(with: Data(body.utf8)) as? [String: Any]) ?? [:]
+        payload["nonce"] = server.nonce
+        let withNonce = String(data: try JSONSerialization.data(withJSONObject: payload), encoding: .utf8)!
+        try await sendHTTPRequest(port: port, method: "POST", path: "/pair", body: withNonce)
 
         // Give the server time to process
         try await Task.sleep(nanoseconds: 500_000_000)

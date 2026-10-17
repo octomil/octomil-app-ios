@@ -1,7 +1,9 @@
 import AVFoundation
 import CoreImage
 import Foundation
-import UIKit
+import ImageIO
+import os.log
+import UniformTypeIdentifiers
 
 /// Uploads compressed JPEG thumbnails of camera frames to the Octomil server.
 ///
@@ -22,6 +24,9 @@ import UIKit
 /// Hard cap at 256 KB to match the server's `_MAX_THUMBNAIL_BYTES`;
 /// if a frame exceeds, drop quality and retry once.
 ///
+/// **Consent.** Callers must gate on an explicit user opt-in; the init
+/// refuses non-first-party hosts so frames never leave to arbitrary servers.
+///
 /// **No payload caching across the queue.** Uploads fire-and-forget;
 /// failures log + retry on the next interval. Demo-mode: we don't
 /// queue frames during connectivity gaps.
@@ -32,6 +37,7 @@ final class ThumbnailUploader: @unchecked Sendable {
     private let interval: TimeInterval
 
     private let session: URLSession
+    private static let logger = Logger(subsystem: "ai.octomil.app", category: "ThumbnailUploader")
     private let ciContext = CIContext()
     private let lock = NSLock()
     private var lastUploadedAt: Date?
@@ -39,13 +45,14 @@ final class ThumbnailUploader: @unchecked Sendable {
     /// Initialize. `serverURL` should be the base (e.g.
     /// `https://api.octomil.com`) without `/api/v1` — this class
     /// appends the path itself.
-    init(
+    init?(
         serverURL: URL,
         deviceToken: String,
         deviceId: String,
         interval: TimeInterval = 5.0,
         session: URLSession = .shared
     ) {
+        guard AppState.isTrustedServer(serverURL.absoluteString) else { return nil }
         self.serverURL = serverURL
         self.deviceToken = deviceToken
         self.deviceId = deviceId
@@ -87,15 +94,24 @@ final class ThumbnailUploader: @unchecked Sendable {
         guard let cgImage = ciContext.createCGImage(scaled, from: scaled.extent) else {
             return nil
         }
-        let uiImage = UIImage(cgImage: cgImage)
 
         // Quality 0.7 is a reasonable JPEG default for thumbnails;
         // drop to 0.5 if we somehow exceed the server cap.
-        var encoded = uiImage.jpegData(compressionQuality: 0.7)
+        var encoded = Self.jpegData(cgImage, quality: 0.7)
         if let existing = encoded, existing.count > 256 * 1024 {
-            encoded = uiImage.jpegData(compressionQuality: 0.5)
+            encoded = Self.jpegData(cgImage, quality: 0.5)
         }
         return encoded
+    }
+
+    // ImageIO rather than UIImage so this also builds for the macOS unit-test target.
+    private static func jpegData(_ image: CGImage, quality: CGFloat) -> Data? {
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else {
+            return nil
+        }
+        CGImageDestinationAddImage(dest, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        return CGImageDestinationFinalize(dest) ? data as Data : nil
     }
 
     private func upload(jpeg: Data) {
@@ -129,11 +145,11 @@ final class ThumbnailUploader: @unchecked Sendable {
             // happened during a demo run. Demo scope: no retries,
             // no offline queue.
             if let error {
-                print("[ThumbnailUploader] upload failed: \(error.localizedDescription)")
+                Self.logger.error("upload failed: \(error.localizedDescription, privacy: .public)")
                 return
             }
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                print("[ThumbnailUploader] HTTP \(http.statusCode) from server")
+                Self.logger.error("HTTP \(http.statusCode) from server")
             }
         }
         task.resume()

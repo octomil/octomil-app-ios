@@ -156,6 +156,19 @@ final class AppState: ObservableObject {
         }
     }
 
+    nonisolated static func isTrustedServer(_ raw: String) -> Bool {
+        guard let url = URL(string: raw), url.scheme == "https", let host = url.host?.lowercased() else { return false }
+        return host == "octomil.com" || host.hasSuffix(".octomil.com")
+    }
+
+    /// Links and the local /pair endpoint are untrusted input: only an unpaired app may be pointed
+    /// at an https *.octomil.com host, and existing credentials are never rebound.
+    func applyPairingHost(_ host: String?) {
+        guard let host, !host.isEmpty, host != serverURL else { return }
+        guard deviceToken.isEmpty, Self.isTrustedServer(host) else { return }
+        serverURL = host
+    }
+
     /// Persist credentials to Keychain so they survive app reinstall.
     func saveToKeychain() {
         if !deviceToken.isEmpty { KeychainHelper.save(key: "device_token", value: deviceToken) }
@@ -304,10 +317,7 @@ final class AppState: ObservableObject {
         let server = LocalPairingServer { [weak self] code, host, modelName in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                if let host, !host.isEmpty {
-                    self.serverURL = host
-                    self.initializeClient()
-                }
+                self.applyPairingHost(host)
                 self.pendingPairingCode = code
                 self.showPairingSheet = true
                 self.selectedTab = .pair
@@ -410,6 +420,7 @@ final class AppState: ObservableObject {
         txtDict["device_name"] = name
         txtDict["platform"] = "ios"
         txtDict["device_id"] = deviceIdString
+        if let nonce = localServer?.nonce { txtDict["nonce"] = nonce }
         let txtData = NetService.data(fromTXTRecord: txtDict.mapValues { $0.data(using: .utf8) ?? Data() })
         let txtRecord = NWTXTRecord(txtData)
 

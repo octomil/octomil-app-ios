@@ -50,6 +50,8 @@ struct DetectionScreen: View {
     /// → dashboard LatestFrameTile. nil for the dev-fallback path (no
     /// Octomil client / no device token to upload with).
     @State private var thumbnailUploader: ThumbnailUploader?
+    @AppStorage("octomil_upload_frames") private var uploadFrames = false
+    @State private var isUploadingFrames = false
     @State private var detections: [Detection] = []
     @State private var isRunning = false
     @State private var statusMessage = "Press Start to begin."
@@ -106,6 +108,11 @@ struct DetectionScreen: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
+                if isUploadingFrames {
+                    Label("Sharing frames", systemImage: "icloud.and.arrow.up")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
                 if isRunning && lastInferenceMs > 0 {
                     Text("\(Int(lastInferenceMs))ms")
                         .font(.caption.monospacedDigit())
@@ -129,6 +136,20 @@ struct DetectionScreen: View {
     }
 
     private var controls: some View {
+        VStack(spacing: 8) {
+            if thumbnailUploader != nil {
+                Toggle("Share a camera frame with the dashboard every 5s", isOn: $uploadFrames)
+                    .font(.caption)
+                    .disabled(isRunning)
+            }
+            startStopButton
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+        .background(Color(.systemBackground))
+    }
+
+    private var startStopButton: some View {
         HStack(spacing: 16) {
             Button(role: isRunning ? .destructive : nil) {
                 if isRunning { stopCapture() } else { startCapture() }
@@ -144,9 +165,6 @@ struct DetectionScreen: View {
             // failed-load state (errorMessage set, no detector).
             .disabled(detector == nil)
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
-        .background(Color(.systemBackground))
     }
 
     // MARK: - Actions
@@ -228,7 +246,9 @@ struct DetectionScreen: View {
                 return
             }
 
-            camera.onFrame = { [detector, telemetry, thumbnailUploader] pixelBuffer, orientation in
+            let uploader = uploadFrames ? thumbnailUploader : nil
+            isUploadingFrames = uploader != nil
+            camera.onFrame = { [detector, telemetry, uploader] pixelBuffer, orientation in
                 guard let detector else { return }
                 let results = detector.detect(pixelBuffer: pixelBuffer, orientation: orientation)
                 let latencyMs = detector.lastInferenceMs
@@ -240,7 +260,7 @@ struct DetectionScreen: View {
 
                 // Periodic JPEG upload for the dashboard tile (throttled
                 // to ~5s inside the uploader). nil on dev-fallback path.
-                thumbnailUploader?.submit(pixelBuffer: pixelBuffer, orientation: orientation)
+                uploader?.submit(pixelBuffer: pixelBuffer, orientation: orientation)
 
                 Task { @MainActor in
                     self.detections = results
@@ -259,6 +279,7 @@ struct DetectionScreen: View {
         camera.stop()
         camera.onFrame = nil
         isRunning = false
+        isUploadingFrames = false
         detections = []
         statusMessage = "Stopped"
     }
@@ -302,10 +323,10 @@ private struct CameraPreviewView: UIViewRepresentable {
     final class PreviewUIView: UIView {
         // swiftlint:disable:next static_over_final_class
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        // `layerClass` guarantees the underlying type — force unwrap is the
-        // documented CoreAnimation pattern for this idiom.
-        // swiftlint:disable:next force_cast
-        var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+        // layerClass guarantees the type; the fallback only keeps this crash-free.
+        var previewLayer: AVCaptureVideoPreviewLayer {
+            (layer as? AVCaptureVideoPreviewLayer) ?? AVCaptureVideoPreviewLayer()
+        }
     }
 }
 

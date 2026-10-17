@@ -5,7 +5,8 @@ import Network
 /// and exposing debug-only golden-path test endpoints.
 ///
 /// Routes:
-/// - `POST /pair` — receive a pairing code from the CLI
+/// - `POST /pair` — receive a pairing code from the CLI (body must include `nonce`)
+/// - DEBUG builds only:
 /// - `GET /golden/status` — report current app state for test harness
 /// - `POST /golden/reset` — clear credentials and cached models
 /// - `POST /golden/test/all` — run all capability tests
@@ -18,6 +19,9 @@ final class LocalPairingServer {
     private let handler: PairHandler
     private var listener: NWListener?
     private(set) var port: UInt16 = 0
+
+    /// Per-launch secret that POST /pair must echo; published via the Bonjour TXT record.
+    let nonce = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 
     /// Returns a JSON-serializable dictionary describing the current app state.
     var statusProvider: (() -> [String: Any])?
@@ -76,13 +80,18 @@ final class LocalPairingServer {
         listener = nil
     }
 
-    /// Max body size accepted (2 MB). Prevents abuse on debug endpoints.
-    private static let maxBodySize = 2 * 1024 * 1024
+    private static let maxBodySize = 64 * 1024
+    private static let maxHeaderSize = 16 * 1024
+    private static let requestTimeout: TimeInterval = 5
 
     private func handleConnection(_ connection: NWConnection) {
         connection.start(queue: .global(qos: .userInitiated))
-        let deadline = DispatchTime.now() + .seconds(5)
+        let deadline = DispatchTime.now() + Self.requestTimeout
+        // Hard cap covering stalled receives; the per-receive deadline check alone never fires on a silent peer.
+        let timeout = DispatchWorkItem { connection.cancel() }
+        DispatchQueue.global().asyncAfter(deadline: deadline, execute: timeout)
         receiveFullRequest(connection: connection, accumulated: Data(), deadline: deadline) { [weak self] result in
+            timeout.cancel()
             switch result {
             case .failure:
                 connection.cancel()
@@ -138,6 +147,10 @@ final class LocalPairingServer {
             }
 
             guard let bodyStart = headerEnd else {
+                if buffer.count > Self.maxHeaderSize {
+                    self.sendResponse(connection: connection, status: "431 Request Header Fields Too Large", body: "{\"error\":\"headers too large\"}")
+                    return
+                }
                 // Haven't received full headers yet — keep reading
                 if DispatchTime.now() < deadline {
                     self.receiveFullRequest(connection: connection, accumulated: buffer, deadline: deadline, completion: completion)
@@ -150,6 +163,10 @@ final class LocalPairingServer {
             // Parse Content-Length from headers
             let headersStr = String(bufferStr[..<bufferStr.range(of: separator)!.lowerBound])
             let contentLength = Self.parseContentLength(from: headersStr)
+            if contentLength > Self.maxBodySize {
+                self.sendResponse(connection: connection, status: "413 Payload Too Large", body: "{\"error\":\"body too large\"}")
+                return
+            }
 
             // Calculate how much body we have
             let bodyStartOffset = bufferStr.distance(from: bufferStr.startIndex, to: bodyStart)
@@ -170,6 +187,12 @@ final class LocalPairingServer {
         }
     }
 
+    private static func constantTimeEquals(_ a: String, _ b: String) -> Bool {
+        let x = Array(a.utf8), y = Array(b.utf8)
+        guard x.count == y.count else { return false }
+        return zip(x, y).reduce(0) { $0 | ($1.0 ^ $1.1) } == 0
+    }
+
     private static func parseContentLength(from headers: String) -> Int {
         for line in headers.components(separatedBy: .newlines) {
             let lower = line.lowercased()
@@ -186,6 +209,7 @@ final class LocalPairingServer {
             handlePair(connection: connection, request: request)
             return
         }
+        #if DEBUG
         if request.hasPrefix("GET /golden/status") {
             handleGoldenStatus(connection: connection)
             return
@@ -194,7 +218,6 @@ final class LocalPairingServer {
             handleGoldenReset(connection: connection)
             return
         }
-        #if DEBUG
         if request.hasPrefix("POST /golden/test/") {
             handleGoldenTest(connection: connection, request: request)
             return
@@ -216,6 +239,11 @@ final class LocalPairingServer {
               let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
               let code = json["code"] as? String else {
             sendResponse(connection: connection, status: "400 Bad Request", body: "Invalid JSON")
+            return
+        }
+
+        guard let presented = json["nonce"] as? String, Self.constantTimeEquals(presented, nonce) else {
+            sendResponse(connection: connection, status: "403 Forbidden", body: "{\"error\":\"bad nonce\"}")
             return
         }
 

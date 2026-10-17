@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 import Security
 
 /// Minimal Keychain wrapper for persisting credentials across app reinstalls.
@@ -9,21 +10,28 @@ import Security
 enum KeychainHelper {
 
     private static let service = "ai.octomil.app"
+    private static let logger = Logger(subsystem: "ai.octomil.app", category: "Keychain")
 
-    static func save(key: String, value: String) {
-        let data = Data(value.utf8)
+    @discardableResult
+    static func save(key: String, value: String) -> Bool {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: key,
         ]
-        // Delete any existing item first
-        SecItemDelete(query as CFDictionary)
+        let attributes: [CFString: Any] = [
+            kSecValueData: Data(value.utf8),
+            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
 
-        var addQuery = query
-        addQuery[kSecValueData] = data
-        addQuery[kSecAttrAccessible] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(addQuery as CFDictionary, nil)
+        var status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            status = SecItemAdd(query.merging(attributes) { $1 } as CFDictionary, nil)
+        }
+        if status != errSecSuccess {
+            logger.error("Keychain save failed for \(key, privacy: .public): \(status)")
+        }
+        return status == errSecSuccess
     }
 
     static func read(key: String) -> String? {
