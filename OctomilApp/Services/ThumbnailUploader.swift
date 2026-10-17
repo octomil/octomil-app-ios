@@ -1,8 +1,9 @@
 import AVFoundation
 import CoreImage
 import Foundation
+import ImageIO
 import os.log
-import UIKit
+import UniformTypeIdentifiers
 
 /// Uploads compressed JPEG thumbnails of camera frames to the Octomil server.
 ///
@@ -93,15 +94,24 @@ final class ThumbnailUploader: @unchecked Sendable {
         guard let cgImage = ciContext.createCGImage(scaled, from: scaled.extent) else {
             return nil
         }
-        let uiImage = UIImage(cgImage: cgImage)
 
         // Quality 0.7 is a reasonable JPEG default for thumbnails;
         // drop to 0.5 if we somehow exceed the server cap.
-        var encoded = uiImage.jpegData(compressionQuality: 0.7)
+        var encoded = Self.jpegData(cgImage, quality: 0.7)
         if let existing = encoded, existing.count > 256 * 1024 {
-            encoded = uiImage.jpegData(compressionQuality: 0.5)
+            encoded = Self.jpegData(cgImage, quality: 0.5)
         }
         return encoded
+    }
+
+    // ImageIO rather than UIImage so this also builds for the macOS unit-test target.
+    private static func jpegData(_ image: CGImage, quality: CGFloat) -> Data? {
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else {
+            return nil
+        }
+        CGImageDestinationAddImage(dest, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        return CGImageDestinationFinalize(dest) ? data as Data : nil
     }
 
     private func upload(jpeg: Data) {

@@ -156,7 +156,7 @@ final class AppState: ObservableObject {
         }
     }
 
-    static func isTrustedServer(_ raw: String) -> Bool {
+    nonisolated static func isTrustedServer(_ raw: String) -> Bool {
         guard let url = URL(string: raw), url.scheme == "https", let host = url.host?.lowercased() else { return false }
         return host == "octomil.com" || host.hasSuffix(".octomil.com")
     }
