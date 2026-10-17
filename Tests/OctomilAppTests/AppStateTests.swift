@@ -14,6 +14,10 @@ private func resetAppStorageDefaults() {
     for key in keys {
         UserDefaults.standard.removeObject(forKey: key)
     }
+    // AppState.init restores from the Keychain, which persists across tests.
+    for key in ["device_token", "org_id", "server_url"] {
+        KeychainHelper.delete(key: key)
+    }
 }
 
 @Suite("AppState")
