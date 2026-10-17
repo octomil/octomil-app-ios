@@ -302,7 +302,7 @@ struct AppStateTests {
     @Test("startLocalServer creates server and assigns port")
     func startLocalServer() async throws {
         let state = AppState()
-        state.startLocalServer()
+        await state.startLocalServer()
 
         // Wait for the server to bind
         try await Task.sleep(nanoseconds: 500_000_000)
