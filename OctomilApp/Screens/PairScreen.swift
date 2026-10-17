@@ -93,10 +93,7 @@ struct PairScreen: View {
            let items = components.queryItems {
             let pairingCode = items.first(where: { $0.name == "code" || $0.name == "token" })?.value
             let host = items.first(where: { $0.name == "host" || $0.name == "server" })?.value
-            if let host, !host.isEmpty {
-                appState.serverURL = host
-                appState.initializeClient()
-            }
+            appState.applyPairingHost(host)
             if let pairingCode {
                 appState.pendingPairingCode = pairingCode
             }
